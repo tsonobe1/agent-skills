@@ -1,0 +1,4 @@
+interface:
+  display_name: "Group Feature"
+  short_description: "Create a feature parent issue from existing tickets."
+  default_prompt: "Group these ticket issues under a feature parent issue."

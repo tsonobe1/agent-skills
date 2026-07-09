@@ -45,6 +45,7 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 ルールを足しています。
 
 - **[conversation-to-readable-html](./conversation-to-readable-html/SKILL.md)**
+- **[group-feature](./group-feature/SKILL.md)**
 - **[playwright](./playwright/SKILL.md)**
 - **[review-standards](./review-standards/SKILL.md)**
 - **[session-resume-check](./session-resume-check/SKILL.md)**
