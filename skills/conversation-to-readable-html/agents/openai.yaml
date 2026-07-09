@@ -1,0 +1,8 @@
+interface:
+  display_name: "Readable HTML"
+  short_description: "Turn notes and chats into readable HTML"
+  brand_color: "#2563EB"
+  default_prompt: "Use $conversation-to-readable-html to turn this conversation or note into a readable single-file HTML report."
+
+policy:
+  allow_implicit_invocation: true

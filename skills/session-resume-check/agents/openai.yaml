@@ -1,0 +1,4 @@
+interface:
+  display_name: "Session Resume Check"
+  short_description: "Summarize current repo progress after reconnecting"
+  default_prompt: "Use $session-resume-check to reconstruct what is already done, what is still uncommitted, what has been verified, and the next safe step after reconnecting."
