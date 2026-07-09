@@ -6,19 +6,23 @@ skills_dir="$repo_root/skills"
 
 codex_home="${CODEX_HOME:-$HOME/.codex}"
 claude_home="${CLAUDE_HOME:-$HOME/.claude}"
+grok_home="${GROK_HOME:-$HOME/.grok}"
 codex_skills_dir="$codex_home/skills"
 claude_skills_dir="$claude_home/skills"
+grok_skills_dir="$grok_home/skills"
 
 codex_state="$codex_skills_dir/.agent-skills-managed"
 codex_file_state="$codex_skills_dir/.agent-skills-managed-files"
 claude_state="$claude_skills_dir/.agent-skills-managed"
+grok_state="$grok_skills_dir/.agent-skills-managed"
 
-mkdir -p "$codex_skills_dir" "$claude_skills_dir"
+mkdir -p "$codex_skills_dir" "$claude_skills_dir" "$grok_skills_dir"
 
 current_codex="$(mktemp)"
 current_codex_files="$(mktemp)"
 current_claude="$(mktemp)"
-trap 'rm -f "$current_codex" "$current_codex_files" "$current_claude"' EXIT
+current_grok="$(mktemp)"
+trap 'rm -f "$current_codex" "$current_codex_files" "$current_claude" "$current_grok"' EXIT
 
 find "$skills_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort > "$current_codex"
 find "$skills_dir" -mindepth 1 -maxdepth 1 -type f -exec basename {} \; | sort > "$current_codex_files"
@@ -85,4 +89,20 @@ if [ -f "$claude_state" ]; then
 fi
 cp "$current_claude" "$claude_state"
 
-echo "Synced $(wc -l < "$current_codex" | tr -d ' ') Codex skills, $(wc -l < "$current_codex_files" | tr -d ' ') Codex top-level files, and $(wc -l < "$current_claude" | tr -d ' ') Claude skills."
+while IFS= read -r skill_name; do
+  [ -n "$skill_name" ] || continue
+  echo "$skill_name"
+  replace_with_symlink "$grok_skills_dir/$skill_name" "$skills_dir/$skill_name"
+done < "$current_codex" > "$current_grok"
+
+if [ -f "$grok_state" ]; then
+  while IFS= read -r old_skill; do
+    [ -n "$old_skill" ] || continue
+    if ! grep -Fxq "$old_skill" "$current_grok"; then
+      rm -rf "$grok_skills_dir/$old_skill"
+    fi
+  done < "$grok_state"
+fi
+cp "$current_grok" "$grok_state"
+
+echo "Synced $(wc -l < "$current_codex" | tr -d ' ') Codex skills, $(wc -l < "$current_codex_files" | tr -d ' ') Codex top-level files, $(wc -l < "$current_claude" | tr -d ' ') Claude skills, and $(wc -l < "$current_grok" | tr -d ' ') Grok skills."

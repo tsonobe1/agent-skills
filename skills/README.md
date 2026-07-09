@@ -1,6 +1,6 @@
 # Skills
 
-Codex と Claude に同期する skills 一覧です。
+Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ## Upstream: mattpocock/skills v1.1.0
 
