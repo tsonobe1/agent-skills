@@ -1,49 +1,90 @@
 # Agent Skills
 
-Shared skills for Codex and Claude.
+Codex と Claude で共通利用する個人用 skills の管理リポジトリです。
 
-This repository is the source of truth for personal agent skills. Runtime skill
-directories are symlinks into this repo:
+## 何を管理しているか
 
-- `~/.codex/skills/<name> -> ./skills/<name>`
-- `~/.claude/skills/<name> -> ./skills/<name>`
+このリポジトリの `skills/` が source of truth です。
 
-## Sync
+実際に Codex / Claude が読む場所には、`skills/` への symlink を置きます。
 
-Run:
+```text
+~/.codex/skills/<skill-name>  ->  ./skills/<skill-name>
+~/.claude/skills/<skill-name> ->  ./skills/<skill-name>
+```
+
+つまり、skill を追加・編集・削除するときは、基本的にこのリポジトリの
+`skills/` を変更します。
+
+## 普段の使い方
+
+skill を編集したら、通常どおり commit します。
+
+```sh
+git status
+git add -A
+git commit -m "Update skills"
+git push
+```
+
+この clone では git hook を設定しているため、`git commit` 後に自動で
+`./scripts/sync-live.sh` が走り、Codex / Claude の runtime 側へ反映されます。
+
+`git pull` や `git merge` の後も自動で同期されます。
+
+## 手動で反映する
+
+commit せずに今すぐ runtime 側へ反映したい場合は、手動で同期します。
 
 ```sh
 ./scripts/sync-live.sh
 ```
 
-The sync script:
+この script は以下を行います。
 
-- links every directory under `skills/` into `~/.codex/skills`
-- links every directory under `skills/` into `~/.claude/skills`
-- records the managed names in `.agent-skills-managed`
-- prunes names that were previously managed by this repo but no longer exist
+- `skills/*` を `~/.codex/skills/*` に symlink する
+- `skills/*` を `~/.claude/skills/*` に symlink する
+- 以前この repo で管理していたが、今は `skills/` から消えた skill を runtime 側から削除する
+- Codex の `.system` や plugin 由来の skills など、この repo 管理ではないものは触らない
 
-It does not touch unrelated runtime skills such as Codex system skills, plugin
-skills, or other personal skill repositories.
+## hook を設定する
 
-## Git Hooks
-
-Install local hooks once per clone:
+別マシンや新しい clone では、一度だけ hook を設定します。
 
 ```sh
 ./scripts/install-hooks.sh
 ```
 
-After that, `git commit` and `git merge`/`git pull` automatically run
-`./scripts/sync-live.sh`. This keeps runtime skills synced after durable repo
-changes without exposing half-edited files while you are still working.
+これで `git commit` / `git pull` / `git merge` の後に自動同期されます。
 
-## Updating Upstream Skills
+編集中の壊れた `SKILL.md` が勝手に反映されないよう、保存時の自動同期にはしていません。
+commit や pull のように、状態が固まったタイミングだけ反映します。
 
-For upstream updates such as `mattpocock/skills`, treat the update as a merge:
+## upstream skills を更新する
 
-1. Clone the upstream release or main branch into a temporary directory.
-2. Copy or merge the relevant skill directories into `skills/`.
-3. Keep local compatibility aliases when old prompts still use old names.
-4. Run `./scripts/sync-live.sh`.
-5. Review, commit, and push this repository.
+`mattpocock/skills` など外部の skills を更新するときは、上書きではなく差分マージとして扱います。
+
+基本の流れ:
+
+```sh
+tmpdir=$(mktemp -d /tmp/mattpocock-skills.XXXXXX)
+git clone --depth 1 --branch v1.1.0 https://github.com/mattpocock/skills.git "$tmpdir"
+```
+
+そのあと、必要な skill を `skills/` にコピーまたは手作業でマージします。
+
+注意点:
+
+- rename された skill は、必要なら旧名を互換 alias として残す
+- ローカルで独自に作った skill は消さない
+- 削除した skill は `./scripts/sync-live.sh` が runtime 側から prune する
+
+最後に確認して commit / push します。
+
+```sh
+./scripts/sync-live.sh
+git diff
+git add -A
+git commit -m "Update upstream skills"
+git push
+```
