@@ -1,433 +1,98 @@
 ---
 name: tdd-review
-description: Review code and tests produced through TDD. Use after implementation to perform behavior-focused, test-focused, architecture-focused, contract-focused, and regression-focused reviews. Continue review/fix cycles until no blocking findings remain.
+description: Use when implementation changes add or modify tests and the test quality needs to be checked against test-case-principles. This is not a general code review.
 ---
 
 # TDD Review
 
-Review code and tests produced through TDD.
+Use this after implementation when tests were added or changed.
 
-The goal is not merely to find defects.
+This is a test-quality review, not a general code review. General code standards, architecture review, and spec conformance belong to `code-review`.
 
-The goal is to verify that:
+## Required Reference
 
-- behavior is correct
-- tests protect behavior
-- contracts remain valid
-- architecture remains maintainable
-- regressions are prevented
+Before reviewing, read this file completely:
 
-A task is not complete while any blocking finding remains open.
+`../test-case-principles/SKILL.md`
 
----
+In the final output, include `principles_checked` with the principle names actually applied.
 
-# Review Standards
+Every finding must name the violated principle from `test-case-principles`.
 
-Apply all rules from:
+## Scope
 
-- test-case-principles
+Review only:
 
-Review both:
+- added or changed tests in the current diff or task
+- production code only as needed to understand the behavior contract and risk those tests claim to protect
+- missing tests for behavior changed by the current diff or task
 
-- production code
-- test code
+Do not raise production-code findings unless they explain a test-quality finding.
 
-A test-related finding is invalid unless it explicitly identifies the violated rule from `test-case-principles`.
+Do not review general code style, broad architecture, naming, comments, or non-test duplication unless it directly affects test confidence.
 
-Examples:
+## Review Questions
 
-- Behavior First
-- One Behavior Per Test
-- Runtime Boundaries
-- Persistence And Rehydrate
-- State Over Interaction
-- Coverage And Regression Requirements
-
----
-
-# Core Principles
-
-| Principle | Criteria |
-|-----------|----------|
-| Fix immediately | Never defer minor issues to a future task when they can be fixed now |
-| Eliminate ambiguity | Every finding must identify file, line, problem, and proposed fix |
-| Fact-check | Verify actual code before raising findings |
-| Practical fixes | Recommend implementable solutions, not theoretical ideals |
-| Boy Scout | Leave changed or directly related code better than it was found |
-
----
-
-# Parallel Reviewers
-
-Run independent review passes from multiple perspectives.
-
-## Behavior Reviewer
-
-Focus on:
-
-- public interfaces
-- observable behavior
-- user-visible outcomes
-- behavior contracts
-
-Questions:
-
-- What behavior does this code provide?
-- Is that behavior verified?
-- Would a user observe a problem?
-
----
-
-## Test Reviewer
-
-Apply all rules from `test-case-principles`.
-
-Focus on:
-
-- behavior-oriented tests
-- regression protection
-- integration coverage
-- boundary coverage
-- runtime boundary verification
-- persistence verification
-
-Questions:
-
-- What behavior does each test protect?
-- Would the test survive a refactor?
-- Is the test exercising public interfaces?
-- Is there one behavior per test?
-- Does the test actually fail if behavior breaks?
-
----
-
-## Contract Reviewer
-
-Focus on:
-
-- public APIs
-- schemas
-- configuration contracts
-- serialization formats
-- caller compatibility
-
-Questions:
-
-- Has any contract changed?
-- Were all callers updated?
-- Were test fixtures updated?
-- Were schemas updated?
-
----
-
-## Architecture Reviewer
-
-Focus on:
-
-- deep modules
-- responsibility boundaries
-- abstraction quality
-- duplication
-- dependency direction
-
-Questions:
-
-- Does this abstraction reduce complexity?
-- Is this a deep module or a shallow module?
-- Is complexity hidden behind a simple interface?
-- Is duplication justified?
-
----
-
-## Regression Reviewer
-
-Focus on:
-
-- preserved behavior
-- persistence
-- migrations
-- state transitions
-- re-fetch loops
-- workflow safety
-
-Questions:
-
-- Could this break existing behavior?
-- Could rerenders trigger duplicate work?
-- Could restore/reload behave differently?
-- Is regression protection present?
-
----
-
-# Scope Determination
-
-| Situation | Verdict | Action |
-|-----------|---------|--------|
-| Problem introduced by this change | Blocking | REJECT |
-| Code made unused by this change | Blocking | REJECT |
-| Existing problem in changed or directly related code | Blocking | REJECT |
-| Structural problem affecting correctness of the change | Blocking | REJECT |
-| Problem in unchanged file | Non-blocking | Informational |
-| Existing problem unrelated to correctness of the change | Non-blocking | Informational |
-| Refactoring greatly exceeding task scope | Non-blocking | Suggestion |
-
----
-
-# TDD-Specific Reject Criteria
-
-Reject if any of the following apply.
-
-- New behavior without tests
-- Bug fix without a regression test
-- Test verifies implementation details instead of behavior
-- Test relies on private or internal APIs
-- Multiple independent behaviors are verified in one test
-- Public contract changed without corresponding test updates
-- Runtime boundary changed without boundary verification
-- Persistence behavior changed without restore verification
-- Integration risk introduced without integration coverage
-- Test would fail after a behavior-preserving refactor
-
----
-
-# General Reject Criteria
-
-Reject if any of the following apply.
-
-- Use of `any`
-- Fallback value abuse (`?? 'unknown'`)
-- Explanatory comments describing what/how rather than why
-- Unused code
-- Swallowed errors
-- TODO/FIXME without:
-  - issue number
-  - external blocker
-  - removal condition
-- Duplicated logic
-- Method proliferation doing effectively the same thing
-- Specific implementation leaking into generic layers
-- Internal implementation exported through public APIs
-- Replaced code surviving after refactoring
-- Missing validation of coupled configuration fields
-- Missing caller/test updates after contract changes
-- Sensitive data exposed in logs, errors, or tests
-
----
-
-# Warning Criteria
-
-Not blocking.
-
-Examples:
-
-- Missing edge-case coverage
-- Missing boundary-value coverage
-- Tests coupled to implementation details
-- Large or complex files
-- Unclear naming
-- Excessive test duplication
-- TODO/FIXME with proper tracking
-- `@ts-ignore` without strong justification
-
----
-
-# Fact Checking
-
-Always verify findings against actual code.
-
-Never:
-
-- speculate
-- assume code exists
-- assume code is missing
-- re-raise previous findings from memory
-
-Before raising a finding:
-
-- read the code
-- verify call sites
-- verify schemas
-- verify types
-- verify generated outputs when relevant
-
-Search failure is not evidence of absence.
-
-Read the actual file and lines before concluding.
-
----
-
-# Test Evaluation Checklist
-
-For every test ask:
+For each added or changed test, answer:
 
 1. What behavior does this test protect?
-2. Would this test survive an internal refactor?
-3. Is the public interface exercised?
-4. Could the same confidence be achieved at a lower test level?
-5. Does the test fail when behavior breaks?
-6. Is the violated rule traceable to test-case-principles?
+2. Is that behavior observable through a public interface?
+3. Is the tested seam appropriate and high enough?
+4. Is the oracle trustworthy and independent of the implementation?
+5. Is there one independent behavior per test?
+6. Would the test survive a behavior-preserving refactor?
+7. Does the test cover relevant runtime boundaries, persistence, rehydrate, or integration risk?
+8. If this is a bug fix, is there a regression test that would fail before the fix?
 
----
+For changed production behavior, also ask:
 
-# Writing Findings
+1. What behavior changed?
+2. Which test protects that behavior now?
+3. Is the test level low enough while still giving real confidence?
 
-Every finding must contain:
+## Blocking Findings
 
-- finding_id
-- status
-- file
-- line
-- problem
-- evidence
-- proposed fix
+Block only when one of these applies:
 
-Example:
+- changed behavior has no corresponding test
+- a bug fix has no regression test
+- a test verifies implementation details instead of behavior
+- a test relies on private or internal APIs
+- a test oracle is tautological, untrusted, or derived from the implementation under test
+- runtime boundary, persistence, rehydrate, or integration risk is untested
+- one test combines multiple independent behaviors so failures are ambiguous
+- a test would fail after a behavior-preserving refactor
+- a fixture, mock, or snapshot is inconsistent with the real contract
+
+Warnings are allowed for lower-risk gaps such as missing edge cases, excess setup, or test duplication that does not reduce confidence.
+
+## Output
+
+Start the report with the principles actually checked:
 
 ```text
-finding_id: TEST-001
-status: new
-
-file: src/auth/service.ts
-line: 45
-
-problem:
-validateUser() is duplicated in three locations.
-
-evidence:
-Same logic exists at lines 45, 78, and 103.
-
-proposed_fix:
-Extract into a shared validation function located in auth/domain/validation.ts.
+principles_checked:
+- <principle from test-case-principles>
+- <principle from test-case-principles>
 ```
 
-Vague feedback is prohibited.
+Then report findings in this format:
 
----
+```text
+status: blocking | warning
+principle: <principle from test-case-principles>
+file: <path>
+line: <line or best location>
+behavior_at_risk: <observable behavior>
+problem: <what is wrong>
+evidence: <code or test evidence>
+fix: <concrete fix>
+```
 
-# Finding Lifecycle
+If there are no blocking findings, still include `principles_checked`, then say:
 
-Valid statuses:
+```text
+No blocking test-quality findings.
+```
 
-- new
-- persists
-- resolved
-- reopened
-
-Rules:
-
-- Every blocking finding requires a finding_id.
-- Reuse finding_id when the same problem persists.
-- Do not reuse a finding_id for a different problem.
-- Resolved findings must be explicitly listed.
-- Blocking rejection requires at least one:
-  - new
-  - persists
-  - reopened
-
----
-
-# Reopen Rules
-
-A resolved finding may be reopened only with:
-
-1. Reproduction steps
-2. Expected result
-3. Actual result
-4. File/line evidence
-
-Otherwise it must remain resolved.
-
----
-
-# Test File Duplication
-
-Large tests and duplicated setup are Warning-level by default.
-
-Reject only when duplication causes:
-
-- flaky tests
-- false positives
-- false negatives
-- reduced regression detection
-
-Length alone is not sufficient.
-
----
-
-# Changelog and History Files
-
-Treat historical documents as historical records.
-
-Do not reject because:
-
-- current API names differ
-- current schemas differ
-- current behavior differs
-
-Reject only when newly added history entries are factually incorrect.
-
----
-
-# Boy Scout Rule
-
-Leave changed or directly related code better than it was found.
-
-Blocking:
-
-- unused code
-- unnecessary branches
-- obvious duplication
-- poor abstractions affecting correctness
-- fixable problems in changed code
-
-Non-blocking:
-
-- unrelated technical debt
-- large refactor opportunities
-- unrelated files
-
----
-
-# Review Loop
-
-The review process is not complete until all blocking findings are resolved.
-
-Workflow:
-
-1. Run all parallel reviewers.
-2. Merge findings.
-3. Deduplicate findings.
-4. Classify findings:
-   - new
-   - persists
-   - resolved
-   - reopened
-5. Fix all blocking findings.
-6. Re-run all reviewers.
-7. Repeat until no blocking findings remain.
-
-Never stop after the first review pass.
-
----
-
-# Final Decision
-
-## APPROVE
-
-Approve only when:
-
-- no blocking findings exist
-- all reviewers pass
-- all required tests exist
-- contracts are verified
-- regressions are protected
-
-## REJECT
-
-Reject if even one blocking finding remains.
-
-"Approve with warnings" is prohibited.
-
-"Approve with suggestions" is prohibited.
-
-A task is complete only when all blocking findings are resolved.
+Then list any warnings separately.
