@@ -12,6 +12,6 @@ Run typechecking regularly, single test files regularly, and the full test suite
 
 Once done, use /code-review to review the work.
 
-If tests were added or changed, also run /tdd-review to check them against test-case-principles.
+If tests were added, changed, or deleted, also run /tdd-review to check them against test-case-principles.
 
 Commit your work to the current branch.

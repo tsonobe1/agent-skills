@@ -39,11 +39,14 @@ Codex と Claude に同期する skills 一覧です。
 ## Local Skills
 
 この repo 独自または別 upstream 由来の skills です。
-`implement` にはローカル方針として、テストを追加・変更した場合に `tdd-review` で
+`implement` にはローカル方針として、テストを追加・変更・削除した場合に `tdd-review` で
 `test-case-principles` に照らすルールを足しています。
+`code-review` にはローカル方針として、Standards 軸で `review-standards` を読む
+ルールを足しています。
 
 - **[conversation-to-readable-html](./conversation-to-readable-html/SKILL.md)**
 - **[playwright](./playwright/SKILL.md)**
+- **[review-standards](./review-standards/SKILL.md)**
 - **[session-resume-check](./session-resume-check/SKILL.md)**
 - **[tdd-review](./tdd-review/SKILL.md)**
 - **[test-case-principles](./test-case-principles/SKILL.md)**
