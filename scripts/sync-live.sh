@@ -3,7 +3,6 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 skills_dir="$repo_root/skills"
-claude_list="$repo_root/config/claude-skills.txt"
 
 codex_home="${CODEX_HOME:-$HOME/.codex}"
 claude_home="${CLAUDE_HOME:-$HOME/.claude}"
@@ -70,20 +69,11 @@ if [ -f "$codex_file_state" ]; then
 fi
 cp "$current_codex_files" "$codex_file_state"
 
-if [ -f "$claude_list" ]; then
-  while IFS= read -r skill_name; do
-    [ -n "$skill_name" ] || continue
-    [ "${skill_name#\#}" = "$skill_name" ] || continue
-    if [ ! -d "$skills_dir/$skill_name" ]; then
-      echo "warning: Claude skill '$skill_name' is not present in $skills_dir" >&2
-      continue
-    fi
-    echo "$skill_name"
-    replace_with_symlink "$claude_skills_dir/$skill_name" "$skills_dir/$skill_name"
-  done < "$claude_list" | sort > "$current_claude"
-else
-  : > "$current_claude"
-fi
+while IFS= read -r skill_name; do
+  [ -n "$skill_name" ] || continue
+  echo "$skill_name"
+  replace_with_symlink "$claude_skills_dir/$skill_name" "$skills_dir/$skill_name"
+done < "$current_codex" > "$current_claude"
 
 if [ -f "$claude_state" ]; then
   while IFS= read -r old_skill; do

@@ -6,8 +6,7 @@ This repository is the source of truth for personal agent skills. Runtime skill
 directories are symlinks into this repo:
 
 - `~/.codex/skills/<name> -> ./skills/<name>`
-- `~/.claude/skills/<name> -> ./skills/<name>` for names listed in
-  `config/claude-skills.txt`
+- `~/.claude/skills/<name> -> ./skills/<name>`
 
 ## Sync
 
@@ -20,7 +19,7 @@ Run:
 The sync script:
 
 - links every directory under `skills/` into `~/.codex/skills`
-- links the names in `config/claude-skills.txt` into `~/.claude/skills`
+- links every directory under `skills/` into `~/.claude/skills`
 - records the managed names in `.agent-skills-managed`
 - prunes names that were previously managed by this repo but no longer exist
 
