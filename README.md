@@ -26,6 +26,18 @@ The sync script:
 It does not touch unrelated runtime skills such as Codex system skills, plugin
 skills, or other personal skill repositories.
 
+## Git Hooks
+
+Install local hooks once per clone:
+
+```sh
+./scripts/install-hooks.sh
+```
+
+After that, `git commit` and `git merge`/`git pull` automatically run
+`./scripts/sync-live.sh`. This keeps runtime skills synced after durable repo
+changes without exposing half-edited files while you are still working.
+
 ## Updating Upstream Skills
 
 For upstream updates such as `mattpocock/skills`, treat the update as a merge:
