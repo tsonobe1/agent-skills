@@ -1,11 +1,11 @@
 ---
 name: tdd-review
-description: Use when implementation changes add or modify tests and the test quality needs to be checked against test-case-principles. This is not a general code review.
+description: Use when implementation changes add, modify, or delete tests and the test quality needs to be checked against test-case-principles. This is not a general code review.
 ---
 
 # TDD Review
 
-Use this after implementation when tests were added or changed.
+Use this after implementation when tests were added, changed, or deleted.
 
 This is a test-quality review, not a general code review. General code standards, architecture review, and spec conformance belong to `code-review`.
 
@@ -23,9 +23,9 @@ Every finding must name the violated principle from `test-case-principles`.
 
 Review only:
 
-- added or changed tests in the current diff or task
+- added, changed, or deleted tests in the current diff or task
 - production code only as needed to understand the behavior contract and risk those tests claim to protect
-- missing tests for behavior changed by the current diff or task
+- missing or removed tests for behavior changed or protected by the current diff or task
 
 Do not raise production-code findings unless they explain a test-quality finding.
 
@@ -50,12 +50,19 @@ For changed production behavior, also ask:
 2. Which test protects that behavior now?
 3. Is the test level low enough while still giving real confidence?
 
+For each deleted test, also ask:
+
+1. What behavior or regression did this test protect?
+2. Is that behavior still protected by another test?
+3. If the test was removed because behavior changed, does a replacement test protect the new behavior?
+
 ## Blocking Findings
 
 Block only when one of these applies:
 
 - changed behavior has no corresponding test
 - a bug fix has no regression test
+- a deleted test removes regression protection without an equivalent replacement
 - a test verifies implementation details instead of behavior
 - a test relies on private or internal APIs
 - a test oracle is tautological, untrusted, or derived from the implementation under test
@@ -76,9 +83,10 @@ principles_checked:
 - <principle from test-case-principles>
 ```
 
-Then report findings in this format:
+Then report findings in this format. Use stable `finding_id` values such as `TDD-001`; in follow-up reviews, reuse the same ID for the same unresolved issue.
 
 ```text
+finding_id: TDD-001
 status: blocking | warning
 principle: <principle from test-case-principles>
 file: <path>
