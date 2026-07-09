@@ -27,15 +27,6 @@ Codex と Claude に同期する skills 一覧です。
 - **[teach](./teach/SKILL.md)** - 複数 session で概念を教える。
 - **[writing-great-skills](./writing-great-skills/SKILL.md)** - skill を書くための参照。
 
-## Compatibility Aliases
-
-古い prompt や手癖を壊さないために残している alias です。
-
-- **[diagnose](./diagnose/SKILL.md)** -> `diagnosing-bugs`
-- **[review](./review/SKILL.md)** -> `code-review`
-- **[to-prd](./to-prd/SKILL.md)** -> `to-spec`
-- **[to-issues](./to-issues/SKILL.md)** -> `to-tickets`
-
 ## Local Skills
 
 この repo 独自または別 upstream 由来の skills です。
