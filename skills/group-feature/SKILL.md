@@ -78,8 +78,8 @@ Attach every child issue to the new parent using the tracker native sub-issue re
 
 On GitHub, prefer the REST sub-issues API over body-only links:
 
-1. Get the child issue node/database ID with `gh issue view <child> --json id`.
-2. Add it under the parent with `gh api repos/{owner}/{repo}/issues/<parent>/sub_issues -f sub_issue_id=<child-id>`.
+1. Get the child issue's numeric database ID with `gh api repos/{owner}/{repo}/issues/<child> --jq .id`.
+2. Add it under the parent with `gh api --method POST repos/{owner}/{repo}/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>`.
 
 If a child already has a different parent, stop and ask before replacing it. If native sub-issues are unavailable, update the parent body task list and add a `Parent: #<parent>` line to each child issue body.
 
