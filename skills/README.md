@@ -6,7 +6,7 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ### User-invoked
 
-明示的に呼び出す skills です。上流では `disable-model-invocation: true` のものです。
+明示的に呼び出す skills です。この repo では `disable-model-invocation: true` を設定しています。
 
 - **[ask-matt](./ask-matt/SKILL.md)** - Matt Pocock skill set の router。
 - **[grill-with-docs](./grill-with-docs/SKILL.md)** - codebase 前提の grilling と docs 更新。
@@ -21,6 +21,7 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - **[handoff](./handoff/SKILL.md)** - 会話を handoff document にまとめる。
 - **[teach](./teach/SKILL.md)** - 複数 session で概念を教える。
 - **[writing-great-skills](./writing-great-skills/SKILL.md)** - skill を書くための参照。
+- **[code-review](./code-review/SKILL.md)** - 抽象化、巨大ファイル、spaghetti growth を厳しく検査する保守性 review。
 
 ### Model-invoked
 
@@ -32,17 +33,16 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - **[tdd](./tdd/SKILL.md)** - TDD の参照 skill。
 - **[domain-modeling](./domain-modeling/SKILL.md)** - domain language と ADR / CONTEXT を育てる。
 - **[codebase-design](./codebase-design/SKILL.md)** - deep modules や seam の設計語彙。
-- **[code-review](./code-review/SKILL.md)** - diff を Standards / Spec の二軸で review する。
 - **[resolving-merge-conflicts](./resolving-merge-conflicts/SKILL.md)** - merge / rebase conflict を解く。
 - **[grilling](./grilling/SKILL.md)** - reusable grilling loop。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.1.0 を元に、次の3つへローカル方針を追加しています。
+Matt Pocock の v1.1.0 を元に、次の3つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
 
 - **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。
-- **[code-review](./code-review/SKILL.md)** - Standards 軸に `review-standards` を追加し、finding ID と再レビュー時の解決状態を追跡します。
+- **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[to-tickets](./to-tickets/SKILL.md)** - ticket 作成後、必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。
 
 ## Local Skills

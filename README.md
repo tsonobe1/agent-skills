@@ -82,6 +82,7 @@ git clone --depth 1 --branch v1.1.0 https://github.com/mattpocock/skills.git "$t
 
 - rename された skill は、必要なら旧名を互換 alias として残す
 - ローカルで独自に作った skill は消さない
+- upstream 由来の skill にローカル変更を加えたら、`skills/README.md` の「Upstream Skills のローカル変更」も更新する
 - 削除した skill は `./scripts/sync-live.sh` が runtime 側から prune する
 
 最後に確認して commit / push します。
