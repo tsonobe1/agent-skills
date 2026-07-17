@@ -61,6 +61,25 @@ When behavior crosses a runtime boundary, verify the value after it crosses that
 - Data that crosses a boundary should be plain enough for that boundary.
 - Do not treat an isolated unit or component test as complete evidence when the real risk is at a runtime boundary.
 
+## Deterministic Execution And Bounded Waiting
+
+Determinism is per-test independence, not a fixed suite order. Each test must control the events that decide its result and return every wait through a finite, diagnosable failure path.
+
+### Execution Independence
+
+- Each test must pass independently of suite order and create or reset the state it relies on.
+- Order events inside the test with explicit observable state, completion signals, or gates owned by the test.
+- Control or isolate clocks, randomness, and external resources whenever they can affect correctness.
+- Make scheduler timing irrelevant by synchronizing on an observable condition. A fixed sleep or assumed scheduler timing is not evidence that the condition occurred.
+
+### Finite Failure Paths
+
+- Every wait that may never complete must have a finite deadline. This includes callbacks, continuations, streams, semaphores, sockets, and child processes.
+- Choose a finite deadline from the processing boundary and expected duration; there is no universal duration for every test.
+- On timeout, report the wait target, expected condition, elapsed time, last observed state, and, for polling, the attempt count.
+- Cleanup must be bounded and limited to resources owned by the test.
+- Surface a timeout or failure as a test failure. An automatic retry must not convert a failed attempt into a passing result.
+
 ## Persistence And Rehydrate
 
 When behavior depends on saved state, test the saved and restored behavior.
@@ -287,12 +306,9 @@ Do not:
 - invent a hypothetical user flow that does not exist in code
 - call production APIs
 - mock the core behavior under test
-- use fixed sleeps for synchronization
 
 Prefer:
 
-- state-based waiting
-- observable completion signals
 - isolated test environments
 - reproducible execution
 
@@ -307,7 +323,6 @@ Requirements:
 - No dependence on personal machine settings.
 - No dependence on developer-specific configuration.
 - Related configuration values must remain internally consistent.
-- Long-running processes should have timeout and cleanup mechanisms.
 
 Tests should remain reproducible across machines, CI environments, and operating systems.
 
