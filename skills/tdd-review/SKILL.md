@@ -51,6 +51,7 @@ For each added or changed test, answer:
 7. Does the test cover relevant runtime boundaries, persistence, rehydrate, or integration risk?
 8. If this is a bug fix, is there a regression test that would fail before the fix?
 9. Can the test pass independently of suite order and without state leaked from another test?
+10. Does the test name state its triggering condition and observable result, rather than making an internal method, type, helper, or implementation step the subject of the specification?
 
 When a test uses concurrency, time, randomness, polling, or an external/runtime resource, also answer:
 
@@ -94,7 +95,7 @@ Block only when one of these applies to the changed behavior or selected risk:
 - a test would fail after a behavior-preserving refactor
 - a fixture, mock, or snapshot is inconsistent with the real contract
 
-Warnings are allowed for lower-risk gaps such as missing edge cases, excess setup, or test duplication that does not reduce confidence.
+Warnings are allowed for lower-risk gaps such as missing edge cases, excess setup, test duplication that does not reduce confidence, or an implementation-coupled test name. A name alone is blocking only when it reveals that the test itself verifies implementation details rather than behavior.
 
 ## Output
 
