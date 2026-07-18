@@ -11,9 +11,9 @@ When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and 
 
 ## Required Reference
 
-Before choosing seams or writing the first test, read `../test-case-principles/SKILL.md` completely.
+Before choosing seams or writing the first test, read `../test-case-principles/SKILL.md` and its [core principles](../test-case-principles/references/core.md). Read only the additional references selected by its Principle Selection table for the current risk.
 
-For each red → green cycle, check the planned test against every applicable principle before writing it, then check the implemented test again before accepting green. The cycle is complete only when no applicable principle is violated.
+For each red → green cycle, check the planned test against the selected principles before writing it, then check the implemented test again before accepting green. The cycle is complete only when no selected principle is violated.
 
 ## What a good test is
 

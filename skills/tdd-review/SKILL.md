@@ -9,15 +9,22 @@ Use this after implementation when tests were added, changed, or deleted.
 
 This is a test-quality review, not a general code review. General code standards, architecture review, and spec conformance belong to `code-review`.
 
-## Required Reference
+## Select Principles
 
-Before reviewing, read this file completely:
+Read `../test-case-principles/SKILL.md` and its core principles. Select additional
+references from its Principle Selection table only when the changed behavior or
+test has the corresponding risk.
 
-`../test-case-principles/SKILL.md`
+If the implementation recorded selected principles, begin from that set and add
+only risks established by the review. Otherwise, derive the selection from the
+current diff and task.
 
-In the final output, include `principles_checked` with the principle names actually applied.
+In the final output, include `principles_checked` with the principle names and
+references actually applied. Every finding must name the violated principle from
+the selected references.
 
-Every finding must name the violated principle from `test-case-principles`.
+Do not raise a finding for an unselected area unless review evidence establishes
+that its risk is present; select the corresponding reference first.
 
 ## Scope
 
@@ -68,7 +75,7 @@ For each deleted test, also ask:
 
 ## Blocking Findings
 
-Block only when one of these applies:
+Block only when one of these applies to the changed behavior or selected risk:
 
 - changed behavior has no corresponding test
 - a bug fix has no regression test
@@ -91,12 +98,12 @@ Warnings are allowed for lower-risk gaps such as missing edge cases, excess setu
 
 ## Output
 
-Start the report with the principles actually checked:
+Start the report with the principles and references actually checked:
 
 ```text
 principles_checked:
-- <principle from test-case-principles>
-- <principle from test-case-principles>
+- <reference or principle from test-case-principles>
+- <reference or principle from test-case-principles>
 ```
 
 Then report findings in this format. Use stable `finding_id` values such as `TDD-001`; in follow-up reviews, reuse the same ID for the same unresolved issue.
