@@ -38,11 +38,12 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.1.0 を元に、次の3つにローカル変更があります。
+Matt Pocock の v1.1.0 を元に、次の4つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
 
 - **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
+- **[tdd](./tdd/SKILL.md)** - テスト作成前と各 red → green cycle で、ローカルの `test-case-principles` を必須参照にしています。
 - **[to-tickets](./to-tickets/SKILL.md)** - ticket 作成後、必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。
 
 ## Local Skills

@@ -43,6 +43,16 @@ For each added or changed test, answer:
 6. Would the test survive a behavior-preserving refactor?
 7. Does the test cover relevant runtime boundaries, persistence, rehydrate, or integration risk?
 8. If this is a bug fix, is there a regression test that would fail before the fix?
+9. Can the test pass independently of suite order and without state leaked from another test?
+
+When a test uses concurrency, time, randomness, polling, or an external/runtime resource, also answer:
+
+1. Is required event order controlled by explicit state, completion signals, or test-owned gates?
+2. Does correctness depend on fixed sleeps, uncontrolled clocks, randomness, external state or resources, or scheduler timing?
+3. Does every potentially non-completing wait have a boundary-appropriate deadline?
+4. Does timeout output identify the wait target, expected condition, elapsed time, last observed state, and polling attempt count when applicable?
+5. Is cleanup bounded to resources owned by the test, with no resource-leak path?
+6. Can an automatic retry hide an initial timeout or failure?
 
 For changed production behavior, also ask:
 
@@ -67,6 +77,12 @@ Block only when one of these applies:
 - a test relies on private or internal APIs
 - a test oracle is tautological, untrusted, or derived from the implementation under test
 - runtime boundary, persistence, rehydrate, or integration risk is untested
+- a test depends on suite order or an uncontrolled clock, randomness, external state or resource, or scheduler timing for correctness
+- required event ordering depends on timing instead of explicit state, a completion signal, or a test-owned gate
+- a callback, continuation, stream, semaphore, socket, child process, or other wait can block without a finite failure path
+- a timeout omits the wait target, expected condition, elapsed time, last observed state, or polling attempt count when applicable
+- cleanup can run without a bound, leak a resource, or terminate resources the test does not own
+- an automatic retry allows an initial timeout or failure to be reported as passing
 - one test combines multiple independent behaviors so failures are ambiguous
 - a test would fail after a behavior-preserving refactor
 - a fixture, mock, or snapshot is inconsistent with the real contract

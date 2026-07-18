@@ -9,6 +9,12 @@ TDD is the red → green loop. This skill is the reference that makes that loop 
 
 When exploring the codebase, read `CONTEXT.md` (if it exists) so test names and interface vocabulary match the project's domain language, and respect ADRs in the area you're touching.
 
+## Required Reference
+
+Before choosing seams or writing the first test, read `../test-case-principles/SKILL.md` completely.
+
+For each red → green cycle, check the planned test against every applicable principle before writing it, then check the implemented test again before accepting green. The cycle is complete only when no applicable principle is violated.
+
 ## What a good test is
 
 Tests verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't. A good test reads like a specification — "user can checkout with valid cart" tells you exactly what capability exists — and survives refactors because it doesn't care about internal structure.
