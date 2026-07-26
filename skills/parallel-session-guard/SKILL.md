@@ -100,9 +100,9 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 5. repo-scoped候補を`read_thread`で確認し、ID、`hostId`、live `status`、現在scopeを特定する。
 6. 最後の`read_thread`直後に、scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
 7. path lookupが`ENOENT`を返した場合だけ、最後の`read_thread`直後にfallback Git snapshotを集める。
-   - `git worktree list --porcelain`
+   - `git worktree list --porcelain -z`
    - 各worktreeについて `git -C <worktree> status --porcelain=v1 -z --untracked-files=all --no-renames`
-8. fallbackではfreshまたはpinnedなbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsを収集する。statusはNUL区切りのporcelain v1 recordとしてparseし、XY列からstaged / unstaged / untracked pathを分類する。malformed、truncated、unknown、directory集約のrecordが1件でもあればsnapshotを不完全とする。
+8. fallbackではworktree inventoryもNUL区切りのporcelain fieldとしてparseする。次にfreshまたはpinnedなbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsを収集する。statusはNUL区切りのporcelain v1 recordとしてparseし、XY列からstaged / unstaged / untracked pathを分類する。malformed、truncated、unknown、directory集約のrecordが1件でもあればsnapshotを不完全とする。
 9. preflightまたはfallback Git snapshot後、`list_threads`とrepository identityの対応付けを再取得してinventory Aを作る。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、元のtaskのstatus / scope更新がないことを確かめる。最後にもう一度完全な`list_threads`とrepository identityを取得してinventory Bを作り、元の候補、A、Bのtask ID、`hostId`、canonical identity、live statusが一致することを確認する。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
 11. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
