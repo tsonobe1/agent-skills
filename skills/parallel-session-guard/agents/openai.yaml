@@ -1,0 +1,4 @@
+interface:
+  display_name: "Parallel Session Guard"
+  short_description: "Inspect active Codex work before starting parallel sessions."
+  default_prompt: "Use live Codex task status and Git worktree evidence to identify ownership, then recommend a conflict-safe work area or the owning task's follow-up queue."
