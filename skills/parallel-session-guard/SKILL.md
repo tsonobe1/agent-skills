@@ -75,7 +75,9 @@ scriptが存在するのに、実行失敗、非zero終了、JSON parse失敗、
 
 # Fallback Git Snapshot
 
-fallbackでは、repo instructionsまたはユーザーが明示したcanonical baselineを優先する。明示baselineがない場合は、remoteのsymbolic default refが一意でcommitに解決できるときだけ、そのrefと固定したSHAをbaselineにする。`origin/main`、`main`、`trunk`、current branch、最初に見つかったremoteを推測で選ばない。baseline refまたはSHAが解決不能、複数候補、dangling、unbornならGit証拠を不完全としてfail closedにする。
+fallbackのbaselineは、明示されたimmutable commit、またはfreshnessを確認したremote default branchのどちらかだけを使う。明示commitはcommitに解決して`pinned: true`として固定する。remote由来ではrepo instructionsで指定されたremote、または一意に特定できるremoteに対し、bounded hard deadlineでauthoritative `HEAD`のsymrefを問い合わせ、そのdefault branchをfetchする。実行を安全にterminateできない、timeout、認証、network、非zero終了、symref不正、fetch後のref / SHA不一致ならcached remote-tracking refへ戻らずfail closedにする。fetch成功後のrefと固定したSHAを`refreshed: true`としてbaselineにする。
+
+`origin/main`、`main`、`trunk`、current branch、最初に見つかったremoteを推測で選ばない。baseline refまたはSHAが解決不能、複数候補、dangling、unbornならGit証拠を不完全としてfail closedにする。
 
 全worktreeでHEAD SHAを固定し、named / detached、clean / dirty、live taskの有無にかかわらず、committed pathsを同じ比較で収集する。
 
@@ -94,11 +96,10 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 5. repo-scoped候補を`read_thread`で確認し、ID、`hostId`、live `status`、現在scopeを特定する。
 6. 最後の`read_thread`直後に、scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
 7. path lookupが`ENOENT`を返した場合だけ、最後の`read_thread`直後にfallback Git snapshotを集める。
-   - `git status --short --branch`
    - `git worktree list --porcelain`
-   - 各 worktree について `git -C <worktree> status --short --branch`
-8. fallbackではbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsとstatus由来のstaged / unstaged / untracked pathsを収集する。
-9. preflightまたはfallback Git snapshot後、先に`list_threads`とrepository identityの対応付けを再取得し、repo-scoped taskの追加・消失・status変化がないことを確かめる。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、task確認後のstatus / scope更新がないことを最後に確かめる。いずれかに差分があればtaskとGitの証拠を同一時点のものと扱わず、開始判断をblockしてguardのやり直しが必要と報告する。
+   - 各worktreeについて `git -C <worktree> status --porcelain=v1 -z --untracked-files=all --no-renames`
+8. fallbackではfreshまたはpinnedなbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsを収集する。statusはNUL区切りのporcelain v1 recordとしてparseし、XY列からstaged / unstaged / untracked pathを分類する。malformed、truncated、unknown、directory集約のrecordが1件でもあればsnapshotを不完全とする。
+9. preflightまたはfallback Git snapshot後、`list_threads`とrepository identityの対応付けを再取得してinventory Aを作る。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、元のtaskのstatus / scope更新がないことを確かめる。最後にもう一度完全な`list_threads`とrepository identityを取得してinventory Bを作り、元の候補、A、Bのtask ID、`hostId`、canonical identity、live statusが一致することを確認する。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
 11. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
@@ -158,10 +159,12 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 **REQUIRED POLICY:** global `AGENTS.md`の「別セッションへの後続依頼」を正本として従う。このskillではユーザーへの事前説明、非割り込み、キュー受付と着手の区別を再定義しない。
 
-- 送信前に`read_thread`でactive turn summaryを記録し、別に`wait_threads`の`timeoutMs: 0`でevent cursorを取得する。
-- task IDと`hostId`を`send_message_to_thread`へ渡し、その結果で対象taskとキュー受付を確認する。
-- 送信直後は`read_thread`で同じactive turnが継続していることを確認する。後続着手は保存したevent cursorを`wait_threads.afterCursor`へ渡して待ち、`read_thread`で新しいturnとassistant出力を確認する。
-- 正確な依頼先、live状態、非割り込みのキュー動作、受付結果のいずれかを確認できない場合は送信しない。
+- 送信前に`read_thread`でactive turn identity / summaryを記録し、`wait_threads`の`timeoutMs: 0`でevent cursorを保存する。正確な依頼先、live状態、非割り込みのキュー動作を確認できない場合は送信しない。
+- task IDと`hostId`を`send_message_to_thread`へ渡して1回だけ送信し、結果から対象taskとacceptance / dispositionを記録する。
+- 送信後に保存cursorを`afterCursor`へ渡した`wait_threads`の`timeoutMs: 0` snapshotと、1回の`read_thread`を取得する。
+- send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。
+- send resultがacceptanceを確認し、cursor後のtransitionと、送信したfollow-upに一致する新turnを`read_thread`で確認できた場合は`accepted / started`と報告する。旧turnの自然終了後に新turnが始まる遷移をinterrupt扱いしない。
+- acceptance、target、cursor、new turnの対応がpartial、timeout、矛盾、または一致不能なら`ambiguous`として停止する。送信済みの可能性があるため再送せず、ユーザーへ確認状態を報告する。
 
 # Stop And Ask
 
