@@ -71,28 +71,38 @@ scriptが存在するのに、実行失敗、非zero終了、JSON parse失敗、
 
 従来の個別Git確認へfallbackできるのは、repo rootの解決に成功した後、正確なscript pathの存在確認が`ENOENT`を返した場合だけとする。権限、I/O、root解決、script実行時の`ENOENT`を含む他の失敗はすべてfail closedとする。validなpreflightの`changes`を対応worktreeのGit差分証拠として使い、同じ状態を個別commandで再収集しない。
 
+# Fallback Git Snapshot
+
+fallbackでは、repo instructionsまたはユーザーが明示したcanonical baselineを優先する。明示baselineがない場合は、remoteのsymbolic default refが一意でcommitに解決できるときだけ、そのrefと固定したSHAをbaselineにする。`origin/main`、`main`、`trunk`、current branch、最初に見つかったremoteを推測で選ばない。baseline refまたはSHAが解決不能、複数候補、dangling、unbornならGit証拠を不完全としてfail closedにする。
+
+全worktreeでHEAD SHAを固定し、named / detached、clean / dirty、live taskの有無にかかわらず、committed pathsを同じ比較で収集する。
+
+```sh
+git diff --name-only <baseline-sha>...<worktree-head-sha>
+```
+
+merge base、worktree HEAD、diff、statusのいずれかを解決できないworktreeが1つでもあればsnapshot全体を不完全とする。detached worktreeもcommitted pathsとdirty pathsを収集対象に含めるが、作業領域として再利用しない。
+
 # Workflow
 
 1. repo rootとrepository identityだけを解決する。この時点ではbranch、worktree一覧、HEAD、dirty state、diffを個別Git commandで収集しない。
 2. 正確なscript path lookupの結果を、存在、`ENOENT`、その他のinspection errorに分類する。この時点ではpreflightもfallback Git状態収集もまだ実行しない。
 3. `list_threads`をqueryなしで呼び、各task `cwd`のrepository identityをrepo rootと比較する。一致したtaskだけをrepo-scoped候補とし、identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、truncated、またはsource unavailableを示す場合はtask inventoryを不完全とする。
-4. repo-scoped候補を`read_thread`で確認し、ID、`hostId`、live `status`、現在scopeを特定してevent cursorを保存する。
-5. 最後の`read_thread`直後に、scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
-6. path lookupが`ENOENT`を返した場合だけ、最後の`read_thread`直後に現在のbranch、worktree、従来のGit状態を集める。
+4. repo-scoped候補を対象に`wait_threads`の`timeoutMs: 0` snapshotを取り、各taskのevent cursorを保存する。
+5. repo-scoped候補を`read_thread`で確認し、ID、`hostId`、live `status`、現在scopeを特定する。
+6. 最後の`read_thread`直後に、scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
+7. path lookupが`ENOENT`を返した場合だけ、最後の`read_thread`直後にfallback Git snapshotを集める。
    - `git status --short --branch`
    - `git worktree list --porcelain`
    - 各 worktree について `git -C <worktree> status --short --branch`
-7. 従来確認で必要なら変更範囲を比較する。
-   - 進行中 branch の変更範囲: `git diff --name-only origin/main...<branch>`
-   - local `main` に積まれた変更を前提にした比較: `git diff --name-only main...<branch>`
-   - dirty worktree は `git -C <worktree> status --short` の変更ファイルを優先して見る。
-8. Git snapshot後、保存したcursorを使って`wait_threads`のbounded immediate snapshotを取り、task確認後の更新がないことを確かめる。更新があればtaskとGitの証拠を同一時点のものと扱わず、開始判断をblockしてguardのやり直しが必要と報告する。
-9. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
-10. taskの`cwd`をworktree pathへ対応付ける。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
-11. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
-12. live taskの現在scopeも加えてgreen / yellow / redを判定する。
-13. 安全な作業領域を提案する。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
-14. `red`でも同じ所有taskが続けるのが適切なら、新しい作業領域を作らず、global `AGENTS.md`の後続依頼ルールに従う。
+8. fallbackではbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsとstatus由来のstaged / unstaged / untracked pathsを収集する。
+9. Git snapshot後、先に`list_threads`とrepository identityの対応付けを再取得し、repo-scoped taskの追加・消失・status変化がないことを確かめる。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、task確認後の更新がないことを最後に確かめる。いずれかに差分があればtaskとGitの証拠を同一時点のものと扱わず、開始判断をblockしてguardのやり直しが必要と報告する。
+10. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
+11. taskの`cwd`をworktree pathへ対応付ける。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
+12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
+13. live taskの現在scopeも加えてgreen / yellow / redを判定する。
+14. 安全な作業領域を提案する。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
+15. `red`でも同じ所有taskが続けるのが適切なら、新しい作業領域を作らず、global `AGENTS.md`の後続依頼ルールに従う。
 
 # Conflict Levels
 
@@ -176,5 +186,6 @@ scriptが存在するのに、実行失敗、非zero終了、JSON parse失敗、
 - taskのactive / idleは必ず`list_threads`のlive `status`で判断する。
 - repository identityはtaskの所属確認にだけ使い、Git状態の証拠として扱わない。
 - task確認より前に取得したGit snapshotからgreen / yellowを判定しない。
+- このguardは時点をそろえたsnapshot確認でありlockではない。開始可能と判断した作業領域は直ちに使い、新しいtask / worktree activityを観測した場合や開始が遅れて鮮度を保証できない場合は編集前にguardをやり直す。
 - taskのscopeは`read_thread`と、validなpreflightの`changes`またはfallback時の対応worktree Git diffの両方で裏取りする。
 - `main の作業を確認して`のような依頼では、task指定がなくてもlive task inventoryと、validなpreflightのbaseline / `changes`、またはfallback時のcurrent `main` commit / diffを確認する。
