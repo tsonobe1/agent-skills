@@ -43,6 +43,13 @@ replace_with_symlink() {
   ln -s "$source" "$target"
 }
 
+is_codex_only_skill() {
+  case "$1" in
+    parallel-session-guard) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 while IFS= read -r skill_name; do
   [ -n "$skill_name" ] || continue
   replace_with_symlink "$codex_skills_dir/$skill_name" "$skills_dir/$skill_name"
@@ -75,6 +82,9 @@ cp "$current_codex_files" "$codex_file_state"
 
 while IFS= read -r skill_name; do
   [ -n "$skill_name" ] || continue
+  if is_codex_only_skill "$skill_name"; then
+    continue
+  fi
   echo "$skill_name"
   replace_with_symlink "$claude_skills_dir/$skill_name" "$skills_dir/$skill_name"
 done < "$current_codex" > "$current_claude"
@@ -91,6 +101,9 @@ cp "$current_claude" "$claude_state"
 
 while IFS= read -r skill_name; do
   [ -n "$skill_name" ] || continue
+  if is_codex_only_skill "$skill_name"; then
+    continue
+  fi
   echo "$skill_name"
   replace_with_symlink "$grok_skills_dir/$skill_name" "$skills_dir/$skill_name"
 done < "$current_codex" > "$current_grok"

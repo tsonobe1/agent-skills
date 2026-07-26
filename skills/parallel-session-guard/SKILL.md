@@ -9,6 +9,8 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 
 **Core principle:** 同じbranch、編集領域、または設計責任の所有者を増やさない。ファイルの重複だけでは競合と断定せず、変更するsymbol・責務・仕様を比較する。所有セッションが実行中なら、そのturnを中断せず、ユーザーへ説明してから後続キューへ積む。
 
+このskillはCodex appのtask inventory toolsを前提とするCodex専用skillである。Claude / Grok runtimeへ同期したり、それらのruntimeでGit証拠だけに縮退して実行したりしない。
+
 # Use This Skill For
 
 - `並列で進めたい`
@@ -82,8 +84,10 @@ fallbackのbaselineは、明示されたimmutable commit、またはfreshnessを
 全worktreeでHEAD SHAを固定し、named / detached、clean / dirty、live taskの有無にかかわらず、committed pathsを同じ比較で収集する。
 
 ```sh
-git diff --name-only <baseline-sha>...<worktree-head-sha>
+git diff --name-status -z --find-renames <baseline-sha>...<worktree-head-sha>
 ```
+
+NUL区切りのname-status recordをparseし、通常の変更は1個のpath、rename / copyはsourceとdestinationの両pathをcommitted pathsへ含める。未知status、必要pathの欠落、malformedまたはtruncated recordが1件でもあればsnapshotを不完全とする。
 
 merge base、worktree HEAD、diff、statusのいずれかを解決できないworktreeが1つでもあればsnapshot全体を不完全とする。detached worktreeもcommitted pathsとdirty pathsを収集対象に含めるが、作業領域として再利用しない。
 
@@ -161,10 +165,11 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 - 送信前に`read_thread`でactive turn identity / summaryを記録し、`wait_threads`の`timeoutMs: 0`でevent cursorを保存する。正確な依頼先、live状態、非割り込みのキュー動作を確認できない場合は送信しない。
 - task IDと`hostId`を`send_message_to_thread`へ渡して1回だけ送信し、結果から対象taskとacceptance / dispositionを記録する。
-- 送信後に保存cursorを`afterCursor`へ渡した`wait_threads`の`timeoutMs: 0` snapshotと、1回の`read_thread`を取得する。
+- 送信後に保存cursorを`afterCursor`へ渡した`wait_threads`を`timeoutMs: 30000`のbounded waitとして1回だけ実行し、その後に1回の`read_thread`を取得する。
 - send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。
 - send resultがacceptanceを確認し、cursor後のtransitionと、送信したfollow-upに一致する新turnを`read_thread`で確認できた場合は`accepted / started`と報告する。旧turnの自然終了後に新turnが始まる遷移をinterrupt扱いしない。
-- acceptance、target、cursor、new turnの対応がpartial、timeout、矛盾、または一致不能なら`ambiguous`として停止する。送信済みの可能性があるため再送せず、ユーザーへ確認状態を報告する。
+- send resultがacceptanceを確認したが、bounded waitが新しいturnを観測する前にtimeoutした場合は`accepted / new turn unconfirmed`として停止する。再送せず、ユーザーへ確認を求める。
+- acceptance、target、cursor、new turnの対応がpartial、矛盾、または一致不能なら`ambiguous`として停止する。送信済みの可能性があるため再送せず、ユーザーへ確認状態を報告する。
 
 # Stop And Ask
 
