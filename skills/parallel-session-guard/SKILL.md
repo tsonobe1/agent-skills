@@ -47,6 +47,8 @@ repository identityの確認では、repo rootと各task `cwd`のcanonical commo
 git -C <cwd> rev-parse --path-format=absolute --git-common-dir
 ```
 
+Git snapshot取得後にtask `cwd`をworktreeへ対応付けるときは、task `cwd`と各worktree pathをcanonical absolute pathへ正規化し、path separator境界を含む包含判定を行う。`cwd`と同一、または`cwd`を含む候補のうち最長pathを選ぶ。候補なし、canonicalize失敗、同じ長さの候補が複数ある場合はtaskを`unscoped`としてfail closedにする。文字列prefixだけで`/repo`を`/repo-other`へ対応付けない。
+
 # Ugen Preflight
 
 repo rootを解決し、正確なpathの存在確認が成功して`scripts/worktrees/preflight.mjs`が存在する場合は、repo-scoped taskの最後の`read_thread`直後に、個別Git状態確認より先に、repo rootから引数なしで1回だけ実行する。task確認とpreflightの間に別の調査や判断を挟まない。実行前にmonotonic clockで120秒後のdeadlineを記録し、独立してterminateできるjobとして開始する。deadlineまでpollし、未完了なら実行toolのterminate機能でjobのprocess treeを強制終了して、停止済みを確認する。この制御を保証できない場合は実行せずfail closedとする。
@@ -96,9 +98,9 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    - `git worktree list --porcelain`
    - 各 worktree について `git -C <worktree> status --short --branch`
 8. fallbackではbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsとstatus由来のstaged / unstaged / untracked pathsを収集する。
-9. Git snapshot後、先に`list_threads`とrepository identityの対応付けを再取得し、repo-scoped taskの追加・消失・status変化がないことを確かめる。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、task確認後の更新がないことを最後に確かめる。いずれかに差分があればtaskとGitの証拠を同一時点のものと扱わず、開始判断をblockしてguardのやり直しが必要と報告する。
-10. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
-11. taskの`cwd`をworktree pathへ対応付ける。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
+9. preflightまたはfallback Git snapshot後、先に`list_threads`とrepository identityの対応付けを再取得し、repo-scoped taskの追加・消失・status変化がないことを確かめる。次に保存したcursorを`afterCursor`に指定して`wait_threads`の`timeoutMs: 0` snapshotを取り、task確認後のstatus / scope更新がないことを最後に確かめる。いずれかに差分があればtaskとGitの証拠を同一時点のものと扱わず、開始判断をblockしてguardのやり直しが必要と報告する。
+10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
+11. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
 13. live taskの現在scopeも加えてgreen / yellow / redを判定する。
 14. 安全な作業領域を提案する。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
