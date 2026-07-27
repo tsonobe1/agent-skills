@@ -45,7 +45,6 @@ replace_with_symlink() {
 
 is_codex_only_skill() {
   case "$1" in
-    parallel-session-guard) return 0 ;;
     *) return 1 ;;
   esac
 }
