@@ -52,6 +52,8 @@ Git snapshot取得後にtask `cwd`をworktreeへ対応付けるときは、task 
 
 task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live statusと、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turnから作る。turn ID、status、`startedAt`、`completedAt`、errorと、全user message itemのID / contentだけをscope fingerprintに含める。reasoning、agent message、tool activityは作業進捗で変化するためfingerprintへ含めない。caller taskを一意に特定できない場合はfail closedにする。
 
+task inventoryは、`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満の場合だけ完全とする。返却件数がsupported maximum limitと同数で、次pageを取得するcursorがない場合は、見えているtaskだけで判定せずinventory incompleteとして停止する。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
+
 # Ugen Preflight
 
 repo rootを解決し、正確なpathの存在確認が成功して`scripts/worktrees/preflight.mjs`が存在する場合は、repo-scoped taskのfinal initial read pass直後に、個別Git状態確認より先に、repo rootから引数なしで1回だけ実行する。final initial read passとpreflightの間に別のtool call、調査、またはユーザー判断を挟まない。実行前にmonotonic clockで120秒後のdeadlineを記録し、独立してterminateできるjobとして開始する。deadlineまでpollし、未完了なら実行toolのterminate機能でjobのprocess treeを強制終了して、停止済みを確認する。この制御を保証できない場合は実行せずfail closedとする。
@@ -96,7 +98,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 1. repo rootとrepository identityだけを解決する。この時点ではbranch、worktree一覧、HEAD、dirty state、diffを個別Git commandで収集しない。
 2. 正確なscript path lookupの結果を、存在、`ENOENT`、その他のinspection errorに分類する。この時点ではpreflightもfallback Git状態収集もまだ実行しない。
-3. `list_threads`をqueryなし・supported maximum limitで呼び、各task `cwd`のrepository identityをrepo rootと比較する。一致したtaskだけをrepo-scoped候補とし、identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、truncated、またはsource unavailableを示す場合はtask inventoryを不完全とする。
+3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventoryのexhaustionを確認する。返却件数がlimitと同数なのにnext page cursorがない場合を含め、exhaustionを確認できなければ不完全として停止する。完全なinventoryの各task `cwd`のrepository identityをrepo rootと比較し、一致したtaskだけをrepo-scoped候補とする。identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、truncated、またはsource unavailableを示す場合もtask inventoryを不完全とする。
 4. repo-scoped候補を`read_thread(turnLimit: 1, includeOutputs: false)`で確認し、caller task、ID、`hostId`、live `status`、現在scope、最新turn snapshotを保存する。このpassでcaller taskを一意に特定でき、repo-scoped task inventoryと各snapshotが完全であることを確認する。partial、矛盾、またはcaller不明ならfinal initial read passへ進まず停止する。
 5. 同じ候補を同じ引数で再取得してfinal initial read passを作る。最初のpassとtask ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintが一致し、全callが完全なら、最後の`read_thread`の次のtool callとしてGit snapshot取得を開始する。差分または失敗があればGit snapshotを取らず、Workflow 9と同じ全体retry制限でguardを最初からやり直す。
 6. scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
@@ -105,9 +107,9 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    - 各worktreeについて `git -C <worktree> status --porcelain=v1 -z --untracked-files=all --no-renames`
 8. fallbackではworktree inventoryもNUL区切りのporcelain fieldとしてparseする。次にfreshまたはpinnedなbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsを収集する。statusはNUL区切りのporcelain v1 recordとしてparseし、XY列からstaged / unstaged / untracked pathを分類する。malformed、truncated、unknown、directory集約のrecordが1件でもあればsnapshotを不完全とする。
 9. preflightまたはfallback Git snapshot後、次の順でpost-preflight snapshotを取得する。
-   1. 完全な`list_threads`とrepository identityの対応付けからinventory Aを作る。
+   1. exhaustionを確認した完全な`list_threads`とrepository identityの対応付けからinventory Aを作る。
    2. Aの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Aを作る。
-   3. もう一度完全な`list_threads`とrepository identityの対応付けからinventory Bを作る。
+   3. もう一度exhaustionを確認した完全な`list_threads`とrepository identityの対応付けからinventory Bを作る。
    4. Bの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Bを作る。
    final initial、A、Bのtask ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
@@ -171,11 +173,11 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 - 送信前に`read_thread(turnLimit: 1, includeOutputs: false)`でactive turn snapshotを保存する。正確な依頼先、live状態、非割り込みのキュー動作を確認できない場合は送信しない。
 - task IDと`hostId`を`send_message_to_thread`へ渡して1回だけ送信し、結果から対象taskとacceptance / dispositionを記録する。
-- 送信後に同じ引数の`read_thread`を1回だけ取得し、送信前snapshotと比較する。
+- `send_message_to_thread`がsuccess、timeout、transport error、不明な結果のいずれでも再送しない。送信済みの可能性を保持したまま、取得可能なら同じ引数の`read_thread`を1回だけ取得し、送信前snapshotと比較する。
 - send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。
 - send resultがacceptanceを確認し、送信前と異なるturn IDと、送信したfollow-upに一致する新turnを`read_thread`で確認できた場合は`accepted / started`と報告する。旧turnの自然終了後に新turnが始まる遷移をinterrupt扱いしない。
 - send resultがacceptanceを確認したが、送信後snapshotを取得できない場合は`accepted / new turn unconfirmed`として停止する。再送せず、ユーザーへ確認を求める。
-- acceptance、target、turn snapshot、new turnの対応がpartial、矛盾、または一致不能なら`ambiguous`として停止する。送信済みの可能性があるため再送せず、ユーザーへ確認状態を報告する。
+- send resultがtimeout、transport error、不明な結果、またはacceptance未確認の場合は、送信後snapshotの取得成否や一致するnew turnの有無にかかわらず`ambiguous`として停止する。acceptance、target、turn snapshot、new turnの対応がpartial、矛盾、または一致不能な場合も同じとする。送信済みの可能性があるため再送せず、観測できた送信後snapshotと確認不能な点をユーザーへ報告する。
 
 # Stop And Ask
 
