@@ -46,7 +46,6 @@ commit せずに今すぐ runtime 側へ反映したい場合は、手動で同�
 - `skills/*` を `~/.codex/skills/*` に symlink する
 - Codex 専用 skill を除く `skills/*` を `~/.claude/skills/*` に symlink する
 - Codex 専用 skill を除く `skills/*` を `~/.grok/skills/*` に symlink する
-- `parallel-session-guard` は Codex app の task inventory tools が必要なため Codex のみに同期する
 - 以前この repo で管理していたが、今は `skills/` から消えた skill を runtime 側から削除する
 - Codex の `.system` や plugin 由来の skills など、この repo 管理ではないものは触らない
 
