@@ -46,7 +46,8 @@ repository identityの確認では、repo rootと各task `cwd`のcanonical commo
 
 - common Git directoryが対象repoと一致するtaskは`repo-scoped`
 - canonical common Git directoryの解決に成功し、対象repoと不一致のtaskは`outside-repo`
-- canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがないtaskは`outside-repo`
+- canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがなく、対象repo rootと同一でもpath separator境界付き祖先でもないtaskは`outside-repo`
+- non-Gitのcanonical cwdが対象repo rootと同一またはpath separator境界付き祖先なら、taskが対象repoへ移動できるため`unscoped`
 - permission、I/O、cwd消失、canonicalize、timeout、tool、dubious ownership、壊れた`.git`、未知の失敗は`unscoped`
 
 `outside-repo`はrepo inventoryから除外するが、task ID、cwd、分類理由、解決済みならcanonical common Git directoryを記録する。`unscoped`はfail closed対象とする。
@@ -61,7 +62,7 @@ task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository id
 
 task inventoryのcoverageは、`exhaustive`または`bounded latest N`として記録する。`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満なら`exhaustive`とする。返却件数がsupported maximum limitと同数で次page cursorがない場合は、その返却集合を`bounded latest N`として使う。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
 
-`bounded latest N`はtask履歴全体のcomplete inventoryではないが、それだけを理由に停止しない。initial、A、Bを同じlimitで取得し、返却task集合、status、scope fingerprintの一致を要求する。50件より古いtaskは未確認と報告し、「全task確認済み」または「task inventory complete」と表現しない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
+`bounded latest N`はtask履歴全体のcomplete inventoryではないが、それだけを理由に停止しない。initial、A、Bを同じlimitで取得し、全返却taskのtask集合・statusと、repo-scoped taskだけのscope fingerprintの一致を要求する。50件より古いtaskは未確認と報告し、「全task確認済み」または「task inventory complete」と表現しない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
 
 # Ugen Preflight
 
@@ -120,7 +121,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    2. Aの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Aを作る。
    3. もう一度initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Bを作り、coverageを記録する。
    4. Bの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Bを作る。
-   全taskを再分類し、final initial、A、Bのcoverage、task ID、`hostId`、identity classification、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化や`outside-repo` / `repo-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
+   全taskを再分類し、final initial、A、Bで、全返却taskのcoverage、task ID、`hostId`、identity classification、canonical identity、`cwd`、live statusが一致することを要求する。scope fingerprintはrepo-scoped taskだけで一致を要求する。`bounded latest N`の境界変化や`outside-repo` / `repo-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
 11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。`bounded latest N`だけを停止理由にはしないが、coverageと未確認範囲を明記する。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
