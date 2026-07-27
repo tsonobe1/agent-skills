@@ -45,10 +45,11 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 repository identityの確認では、repo rootと各task `cwd`のcanonical common Git directoryだけを比較する。これはtaskのrepo所属を絞るための確認であり、branch、worktree一覧、HEAD、dirty state、diffを収集しない。結果は`repo-scoped`、`outside-repo`、`unscoped`へ分類する。
 
 - common Git directoryが対象repoと一致するtaskは`repo-scoped`
+- canonical common Git directoryの解決に成功し、対象repoと不一致のtaskは`outside-repo`
 - canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがないtaskは`outside-repo`
 - permission、I/O、cwd消失、canonicalize、timeout、tool、dubious ownership、壊れた`.git`、未知の失敗は`unscoped`
 
-`outside-repo`はrepo inventoryから除外するが、task IDとcwdを記録する。`unscoped`はfail closed対象とする。
+`outside-repo`はrepo inventoryから除外するが、task ID、cwd、分類理由、解決済みならcanonical common Git directoryを記録する。`unscoped`はfail closed対象とする。
 
 ```sh
 git -C <cwd> rev-parse --path-format=absolute --git-common-dir
@@ -119,7 +120,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    2. Aの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Aを作る。
    3. もう一度initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Bを作り、coverageを記録する。
    4. Bの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Bを作る。
-   final initial、A、Bのcoverage、task ID、`hostId`、identity classification、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化や`outside-repo` / `repo-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
+   全taskを再分類し、final initial、A、Bのcoverage、task ID、`hostId`、identity classification、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化や`outside-repo` / `repo-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
 11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。`bounded latest N`だけを停止理由にはしないが、coverageと未確認範囲を明記する。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
@@ -201,7 +202,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 1. 今の自分の作業とぶつかるか
 2. Git状態の取得元（preflightまたはfallback）と完全性
-3. live `status`を確認したrepo-scoped task / worktree、明確なnon-Git cwdの`outside-repo` task、identity未確認の`unscoped` task
+3. live `status`を確認したrepo-scoped task / worktree、別Git repositoryまたは明確なnon-Git cwdの`outside-repo` task、identity未確認の`unscoped` task
    - task inventory coverageが`bounded latest N`なら、Nと「それより古いtaskは未確認」を明記する
 4. 重複または競合の根拠
 5. 推奨する作業領域
