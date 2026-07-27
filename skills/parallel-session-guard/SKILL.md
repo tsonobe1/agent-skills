@@ -52,7 +52,9 @@ Git snapshot取得後にtask `cwd`をworktreeへ対応付けるときは、task 
 
 task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live statusと、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turnから作る。turn ID、status、`startedAt`、`completedAt`、errorと、全user message itemのID / contentだけをscope fingerprintに含める。reasoning、agent message、tool activityは作業進捗で変化するためfingerprintへ含めない。caller taskを一意に特定できない場合はfail closedにする。
 
-task inventoryは、`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満の場合だけ完全とする。返却件数がsupported maximum limitと同数で、次pageを取得するcursorがない場合は、見えているtaskだけで判定せずinventory incompleteとして停止する。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
+task inventoryのcoverageは、`exhaustive`または`bounded latest N`として記録する。`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満なら`exhaustive`とする。返却件数がsupported maximum limitと同数で次page cursorがない場合は、その返却集合を`bounded latest N`として使う。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
+
+`bounded latest N`はtask履歴全体のcomplete inventoryではないが、それだけを理由に停止しない。initial、A、Bを同じlimitで取得し、返却task集合、status、scope fingerprintの一致を要求する。50件より古いtaskは未確認と報告し、「全task確認済み」または「task inventory complete」と表現しない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
 
 # Ugen Preflight
 
@@ -98,8 +100,8 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 1. repo rootとrepository identityだけを解決する。この時点ではbranch、worktree一覧、HEAD、dirty state、diffを個別Git commandで収集しない。
 2. 正確なscript path lookupの結果を、存在、`ENOENT`、その他のinspection errorに分類する。この時点ではpreflightもfallback Git状態収集もまだ実行しない。
-3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventoryのexhaustionを確認する。返却件数がlimitと同数なのにnext page cursorがない場合を含め、exhaustionを確認できなければ不完全として停止する。完全なinventoryの各task `cwd`のrepository identityをrepo rootと比較し、一致したtaskだけをrepo-scoped候補とする。identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、truncated、またはsource unavailableを示す場合もtask inventoryを不完全とする。
-4. repo-scoped候補を`read_thread(turnLimit: 1, includeOutputs: false)`で確認し、caller task、ID、`hostId`、live `status`、現在scope、最新turn snapshotを保存する。このpassでcaller taskを一意に特定でき、repo-scoped task inventoryと各snapshotが完全であることを確認する。partial、矛盾、またはcaller不明ならfinal initial read passへ進まず停止する。
+3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventory coverageを`exhaustive`または`bounded latest N`として記録する。返却件数がlimitと同数でnext page cursorがなくても、`bounded latest N`として続行する。返却された各task `cwd`のrepository identityをrepo rootと比較し、一致したtaskだけをrepo-scoped候補とする。identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、明示的なtruncation error、またはsource unavailableを示す場合は停止する。
+4. repo-scoped候補を`read_thread(turnLimit: 1, includeOutputs: false)`で確認し、caller task、ID、`hostId`、live `status`、現在scope、最新turn snapshotを保存する。このpassでcaller taskを一意に特定でき、返却されたrepo-scoped候補集合と各snapshotが構造的に完全であることを確認する。partial、矛盾、またはcaller不明ならfinal initial read passへ進まず停止する。
 5. 同じ候補を同じ引数で再取得してfinal initial read passを作る。最初のpassとtask ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintが一致し、全callが完全なら、最後の`read_thread`の次のtool callとしてGit snapshot取得を開始する。差分または失敗があればGit snapshotを取らず、Workflow 9と同じ全体retry制限でguardを最初からやり直す。
 6. scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
 7. path lookupが`ENOENT`を返した場合だけ、fallback Git snapshotを集める。
@@ -107,13 +109,13 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    - 各worktreeについて `git -C <worktree> status --porcelain=v1 -z --untracked-files=all --no-renames`
 8. fallbackではworktree inventoryもNUL区切りのporcelain fieldとしてparseする。次にfreshまたはpinnedなbaseline ref / SHAと全worktreeのHEAD SHAを固定し、各HEADのcommitted pathsを収集する。statusはNUL区切りのporcelain v1 recordとしてparseし、XY列からstaged / unstaged / untracked pathを分類する。malformed、truncated、unknown、directory集約のrecordが1件でもあればsnapshotを不完全とする。
 9. preflightまたはfallback Git snapshot後、次の順でpost-preflight snapshotを取得する。
-   1. exhaustionを確認した完全な`list_threads`とrepository identityの対応付けからinventory Aを作る。
+   1. initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Aを作り、coverageを記録する。
    2. Aの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Aを作る。
-   3. もう一度exhaustionを確認した完全な`list_threads`とrepository identityの対応付けからinventory Bを作る。
+   3. もう一度initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Bを作り、coverageを記録する。
    4. Bの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Bを作る。
-   final initial、A、Bのtask ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
+   final initial、A、Bのcoverage、task ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
-11. Git証拠またはtask inventoryが不完全な場合と、`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。inventoryをcompleteと呼ばず、開始・競合判定・作業領域提案は行わない。
+11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。`bounded latest N`だけを停止理由にはしないが、coverageと未確認範囲を明記する。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
 13. live taskの現在scopeも加えてgreen / yellow / redを判定する。
 14. 安全な作業領域を提案する。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
@@ -194,6 +196,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 1. 今の自分の作業とぶつかるか
 2. Git状態の取得元（preflightまたはfallback）と完全性
 3. live `status`を確認したrepo-scoped task / worktreeと、identity未確認の`unscoped` task
+   - task inventory coverageが`bounded latest N`なら、Nと「それより古いtaskは未確認」を明記する
 4. 重複または競合の根拠
 5. 推奨する作業領域
 6. 後続キューへ積んだ場合は、対象セッション名・ID・受付状態
@@ -202,6 +205,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 # Notes
 
 - taskのactive / idleは必ず`list_threads`のlive `status`で判断する。
+- `bounded latest N`をtask履歴全体のcomplete inventoryと呼ばない。競合判定は「最新N件のtaskと全worktreeのGit状態に基づく」と表現する。
 - repository identityはtaskの所属確認にだけ使い、Git状態の証拠として扱わない。
 - task確認より前に取得したGit snapshotからgreen / yellowを判定しない。
 - このguardは時点をそろえたsnapshot確認でありlockではない。開始可能と判断した作業領域は直ちに使い、新しいtask / worktree activityを観測した場合や開始が遅れて鮮度を保証できない場合は編集前にguardをやり直す。
