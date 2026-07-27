@@ -42,7 +42,13 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 
 `~/.codex/sessions`などの内部ログや更新時刻から、taskのactive状態や所有者を推測しない。Codex appのtask情報を確認できない場合は、正確な依頼先を特定できないものとして送信を止め、ユーザーへ報告する。
 
-repository identityの確認では、repo rootと各task `cwd`のcanonical common Git directoryだけを比較する。これはtaskのrepo所属を絞るための確認であり、branch、worktree一覧、HEAD、dirty state、diffを収集しない。task `cwd`のidentityを解決できない場合は、そのtaskをrepo inventoryへ含めず`unscoped`として報告する。
+repository identityの確認では、repo rootと各task `cwd`のcanonical common Git directoryだけを比較する。これはtaskのrepo所属を絞るための確認であり、branch、worktree一覧、HEAD、dirty state、diffを収集しない。結果は`repo-scoped`、`outside-repo`、`unscoped`へ分類する。
+
+- common Git directoryが対象repoと一致するtaskは`repo-scoped`
+- canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがないtaskは`outside-repo`
+- permission、I/O、cwd消失、canonicalize、timeout、tool、dubious ownership、壊れた`.git`、未知の失敗は`unscoped`
+
+`outside-repo`はrepo inventoryから除外するが、task IDとcwdを記録する。`unscoped`はfail closed対象とする。
 
 ```sh
 git -C <cwd> rev-parse --path-format=absolute --git-common-dir
@@ -100,7 +106,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 1. repo rootとrepository identityだけを解決する。この時点ではbranch、worktree一覧、HEAD、dirty state、diffを個別Git commandで収集しない。
 2. 正確なscript path lookupの結果を、存在、`ENOENT`、その他のinspection errorに分類する。この時点ではpreflightもfallback Git状態収集もまだ実行しない。
-3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventory coverageを`exhaustive`または`bounded latest N`として記録する。返却件数がlimitと同数でnext page cursorがなくても、`bounded latest N`として続行する。返却された各task `cwd`のrepository identityをrepo rootと比較し、一致したtaskだけをrepo-scoped候補とする。identityを解決できないtaskは`unscoped`として分ける。tool responseがpartial、明示的なtruncation error、またはsource unavailableを示す場合は停止する。
+3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventory coverageを`exhaustive`または`bounded latest N`として記録する。返却件数がlimitと同数でnext page cursorがなくても、`bounded latest N`として続行する。返却された各task `cwd`を`repo-scoped`、`outside-repo`、`unscoped`へ分類する。tool responseがpartial、明示的なtruncation error、またはsource unavailableを示す場合は停止する。
 4. repo-scoped候補を`read_thread(turnLimit: 1, includeOutputs: false)`で確認し、caller task、ID、`hostId`、live `status`、現在scope、最新turn snapshotを保存する。このpassでcaller taskを一意に特定でき、返却されたrepo-scoped候補集合と各snapshotが構造的に完全であることを確認する。partial、矛盾、またはcaller不明ならfinal initial read passへ進まず停止する。
 5. 同じ候補を同じ引数で再取得してfinal initial read passを作る。最初のpassとtask ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintが一致し、全callが完全なら、最後の`read_thread`の次のtool callとしてGit snapshot取得を開始する。差分または失敗があればGit snapshotを取らず、Workflow 9と同じ全体retry制限でguardを最初からやり直す。
 6. scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
@@ -113,7 +119,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
    2. Aの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Aを作る。
    3. もう一度initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Bを作り、coverageを記録する。
    4. Bの全repo-scoped候補を同じ引数の`read_thread`で取得してscope Bを作る。
-   final initial、A、Bのcoverage、task ID、`hostId`、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
+   final initial、A、Bのcoverage、task ID、`hostId`、identity classification、canonical identity、`cwd`、live status、scope fingerprintがすべて一致することを要求する。`bounded latest N`の境界変化や`outside-repo` / `repo-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockしてguard全体を最初からやり直す。全体retryは1回までとし、再び変化した場合はinventory unstableとして停止する。
 10. taskの`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。validなpreflightでは`changes`をGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
 11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、repo-scoped task inventory、`unscoped` taskを分けて報告し停止する。`bounded latest N`だけを停止理由にはしないが、coverageと未確認範囲を明記する。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
@@ -195,7 +201,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 
 1. 今の自分の作業とぶつかるか
 2. Git状態の取得元（preflightまたはfallback）と完全性
-3. live `status`を確認したrepo-scoped task / worktreeと、identity未確認の`unscoped` task
+3. live `status`を確認したrepo-scoped task / worktree、明確なnon-Git cwdの`outside-repo` task、identity未確認の`unscoped` task
    - task inventory coverageが`bounded latest N`なら、Nと「それより古いtaskは未確認」を明記する
 4. 重複または競合の根拠
 5. 推奨する作業領域
