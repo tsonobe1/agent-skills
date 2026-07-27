@@ -44,6 +44,18 @@
 
 `semantic conflict fingerprint`集合が変わる。Git snapshotを破棄して再取得し、再び変わる場合はblockする。
 
+## owner fieldがないschema-v1 preflight
+
+### Initial
+
+- preflight: `schemaVersion: 1`, `complete: true`, `refreshed: true`
+- worktree entry: `ownerThreadId` / `ownerGeneration`なし
+- planned action: new worktreeの開始判定
+
+### Expected
+
+通常のpreflight契約として受理する。`owner-verified retirement`だけを利用不可にし、退役以外のguard操作は継続する。
+
 ## 自己所有worktreeの退役
 
 ### Initial
@@ -53,7 +65,7 @@
 - selected worktree owner: `{ ownerThreadId: "task-current", ownerGeneration: "generation-2" }`
 - selected worktree tuple is unique and stable
 - planned action: owner / generationを再検証するUgen退役entry point
-- known target overlap / unfinished hazard / Git error: none
+- caller以外のknown target overlap / unfinished hazard / Git error: none
 
 ### Expected
 

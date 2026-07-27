@@ -106,7 +106,7 @@ timeoutまたは強制終了は1回の実行を消費した契約違反とし、
 
 - `schemaVersion === 1`、`complete === true`、`refreshed === true`
 - `baseline`はobject、`ref === "origin/main"`、`sha`は空でないstring
-- `worktrees`はobjectのarray。`path`と`head`はstring、`branch`、`lockReason`、`ownerThreadId`、`ownerGeneration`、`prunableReason`はstringまたは`null`、`detached`、`locked`、`prunable`はboolean
+- `worktrees`はobjectのarray。`path`と`head`はstring、`branch`、`lockReason`、`prunableReason`はstringまたは`null`、`detached`、`locked`、`prunable`はboolean。任意の`ownerThreadId`と`ownerGeneration`は、存在する場合だけstringまたは`null`
 - 各`changes`はobjectで、`committed`、`staged`、`unstaged`、`untracked`、`allPaths`はstringのarray
 - `fileOverlaps`はobjectのarrayで、各`worktreePaths`と`paths`はstringのarray
 - `errors`はobjectのarrayで、各`code`と`message`、任意の`worktreePath`はstring。開始判断時は空
@@ -123,7 +123,7 @@ scriptが存在するのに、実行失敗、非zero終了、JSON parse失敗、
 - 対象worktreeの`ownerThreadId`がcaller task IDと完全一致する
 - `ownerGeneration`がnon-emptyで、対象worktreeの同じpath / branch / HEAD / owner tupleがGit snapshot内で一意である
 - planned actionがUgenのowner / generation再検証を行う退役entry pointだけであり、そのentry pointが契約するqueue state以外のworktree、branch、file、remote stateを追加で変更しない
-- 既知の`target-scoped` taskに同じworktree、branch、退役責務の所有者がなく、`unscoped` task、unfinished hazard、Git errorがない
+- caller以外の既知の`target-scoped` taskに同じworktree、branch、退役責務の所有者がなく、`unscoped` task、unfinished hazard、Git errorがない
 
 この条件では`bounded latest N`より古いtaskが同じworktreeを所有するという推測よりdurable owner leaseを優先し、coverage approvalを要求せず退役できる。判定名は`owner-verified retirement`とし、exhaustive coverageまたは`green`とは呼ばない。owner fieldの欠落、空値、不一致、tuple重複、planned scopeの拡張、退役entry pointの再検証不能があればこの例外を使わず、通常の`coverage-limited` / yellow / red判定へ戻す。
 
