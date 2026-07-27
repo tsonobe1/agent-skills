@@ -6,7 +6,7 @@ Codex、Claude、Grok Build で共通利用する個人用 skills の管理リ�
 
 このリポジトリの `skills/` が source of truth です。
 
-実際に Codex / Claude / Grok Build が読む場所には、`skills/` への symlink を置きます。
+実際に Codex / Claude / Grok Build が読む場所には、原則として `skills/` への symlink を置きます。
 
 ```text
 ~/.codex/skills/<skill-name>  ->  ./skills/<skill-name>
@@ -44,8 +44,9 @@ commit せずに今すぐ runtime 側へ反映したい場合は、手動で同�
 この script は以下を行います。
 
 - `skills/*` を `~/.codex/skills/*` に symlink する
-- `skills/*` を `~/.claude/skills/*` に symlink する
-- `skills/*` を `~/.grok/skills/*` に symlink する
+- Codex 専用 skill を除く `skills/*` を `~/.claude/skills/*` に symlink する
+- Codex 専用 skill を除く `skills/*` を `~/.grok/skills/*` に symlink する
+- `parallel-session-guard` は Codex app の task inventory tools が必要なため Codex のみに同期する
 - 以前この repo で管理していたが、今は `skills/` から消えた skill を runtime 側から削除する
 - Codex の `.system` や plugin 由来の skills など、この repo 管理ではないものは触らない
 

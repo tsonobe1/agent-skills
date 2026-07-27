@@ -62,6 +62,7 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 モデルが状況に応じて自動で使える skills です。ユーザーが明示的に呼んでも構いません。
 
 - **[conversation-to-readable-html](./conversation-to-readable-html/SKILL.md)** - 会話や調査結果を読みやすい単一 HTML にまとめる。
+- **[parallel-session-guard](./parallel-session-guard/SKILL.md)** - Codex app専用。session、worktree、変更範囲の競合を作業開始前に確認する（Claude / Grokへは同期しない）。
 - **[playwright](./playwright/SKILL.md)** - 実ブラウザを操作して画面確認やデータ取得を行う。
 - **[review-standards](./review-standards/SKILL.md)** - repo の規約を補う個人用 code review 基準を適用する。
 - **[session-resume-check](./session-resume-check/SKILL.md)** - 再接続後に作業状況と次の安全な手順を復元する。
