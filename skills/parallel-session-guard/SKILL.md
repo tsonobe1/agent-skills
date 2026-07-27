@@ -7,7 +7,7 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 
 複数の Codex セッションを同時に進める前に、最近の作業と現在の Git 状態を照合し、競合しにくい作業領域を決める。
 
-**Core principle:** 同じbranch、編集領域、または設計責任の所有者を増やさない。ファイルの重複だけでは競合と断定せず、変更するsymbol・責務・仕様を比較する。所有セッションが実行中なら、そのturnを中断せず、ユーザーへ説明してから後続キューへ積む。
+**Core principle:** 同じbranch、編集領域、または設計責任の所有者を増やさない。ファイルの重複だけでは競合と断定せず、変更するsymbol・責務・仕様を比較する。所有セッションが実行中なら、そのturnを中断しない。後続依頼が現在のvisible scope内ならユーザーへ説明してからキューへ積み、scopeを拡張するならidleになるまで待つかユーザーへ報告する。
 
 このskillはCodex appのtask inventory toolsを前提とするCodex専用skillである。Claude / Grok runtimeへ同期したり、それらのruntimeでGit証拠だけに縮退して実行したりしない。
 
@@ -45,7 +45,8 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 repository identityの確認では、repo rootと各task `cwd`のcanonical common Git directoryだけを比較する。これはtaskのrepo所属を絞るための確認であり、branch、worktree一覧、HEAD、dirty state、diffを収集しない。結果は`repo-scoped`、`outside-repo`、`unscoped`へ分類する。
 
 - common Git directoryが対象repoと一致するtaskは`repo-scoped`
-- canonical common Git directoryの解決に成功し、対象repoと不一致のtaskは`outside-repo`
+- canonical cwdが対象repo rootと同一またはpath separator境界付き祖先なら、common Git directoryが別repositoryでも対象repoへ移動できるため`unscoped`
+- canonical common Git directoryの解決に成功し、対象repoと不一致で、canonical cwdが対象repo rootのpath separator境界付き祖先でもないtaskは`outside-repo`
 - canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがなく、対象repo rootと同一でもpath separator境界付き祖先でもないtaskは`outside-repo`
 - non-Gitのcanonical cwdが対象repo rootと同一またはpath separator境界付き祖先なら、taskが対象repoへ移動できるため`unscoped`
 - permission、I/O、cwd消失、canonicalize、timeout、tool、dubious ownership、壊れた`.git`、未知の失敗は`unscoped`
@@ -62,7 +63,7 @@ task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository id
 
 task inventoryのcoverageは、`exhaustive`または`bounded latest N`として記録する。`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満なら`exhaustive`とする。返却件数がsupported maximum limitと同数で次page cursorがない場合は、その返却集合を`bounded latest N`として使う。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
 
-`bounded latest N`はtask履歴全体のcomplete inventoryではないが、それだけを理由に停止しない。initial、A、Bを同じlimitで取得し、全返却taskのtask集合・statusと、repo-scoped taskだけのscope fingerprintの一致を要求する。50件より古いtaskは未確認と報告し、「全task確認済み」または「task inventory complete」と表現しない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
+`bounded latest N`はtask履歴全体のcomplete inventoryではないが、それだけを理由に停止しない。initial、A、Bを同じlimitで取得し、全返却taskのtask集合・statusと、repo-scoped taskだけのscope fingerprintの一致を要求する。N件より古いtaskは未確認と報告し、「全task確認済み」または「task inventory complete」と表現しない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
 
 # Ugen Preflight
 
@@ -150,7 +151,7 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 | --- | --- |
 | `green` | 独立した作業領域で進める |
 | `yellow` | 別worktreeで編集領域と統合順序を明示して進める |
-| `red`かつ既存所有セッションが続ける | ユーザーへ事前説明し、所有セッションの後続キューへ積む |
+| `red`かつ既存所有セッションが続ける | visible scope内なら事前説明して後続キューへ積む。scope拡張なら送信しない |
 | `red`かつ所有者・scope・キュー動作が不明 | 送信も編集もせずユーザーへ確認する |
 
 ## Same-File Decision
@@ -182,9 +183,10 @@ merge base、worktree HEAD、diff、statusのいずれかを解決できないwo
 **REQUIRED POLICY:** global `AGENTS.md`の「別セッションへの後続依頼」を正本として従う。このskillではユーザーへの事前説明、非割り込み、キュー受付と着手の区別を再定義しない。
 
 - 送信前に`read_thread(turnLimit: 1, includeOutputs: false)`でactive turn snapshotを保存する。正確な依頼先、live状態、非割り込みのキュー動作を確認できない場合は送信しない。
+- 対象taskが実行中なら、follow-upの予定file、symbol、責務、仕様が、snapshotで確認できる対象taskの現在scopeにすべて含まれる場合だけ送信する。この場合は既に見えているscopeがownershipを保持する。follow-upが現在scopeを拡張する場合、current toolsではqueued scopeを後続guardが再取得できるdurable reservationとして保存できないため送信せず、対象taskがidleになるまで待つかユーザーへ報告する。
 - task IDと`hostId`を`send_message_to_thread`へ渡して1回だけ送信し、結果から対象taskとacceptance / dispositionを記録する。
 - `send_message_to_thread`がsuccess、timeout、transport error、不明な結果のいずれでも再送しない。送信済みの可能性を保持したまま、取得可能なら同じ引数の`read_thread`を1回だけ取得し、送信前snapshotと比較する。
-- send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。
+- send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。これは受付状態だけを表し、新しいownership予約とは扱わない。対象taskの送信前scopeに含まれないfollow-upをこの状態へ進めてはならない。
 - send resultがacceptanceを確認し、送信前と異なるturn IDと、送信したfollow-upに一致する新turnを`read_thread`で確認できた場合は`accepted / started`と報告する。旧turnの自然終了後に新turnが始まる遷移をinterrupt扱いしない。
 - send resultがacceptanceを確認したが、送信後snapshotを取得できない場合は`accepted / new turn unconfirmed`として停止する。再送せず、ユーザーへ確認を求める。
 - send resultがtimeout、transport error、不明な結果、またはacceptance未確認の場合は、送信後snapshotの取得成否や一致するnew turnの有無にかかわらず`ambiguous`として停止する。acceptance、target、turn snapshot、new turnの対応がpartial、矛盾、または一致不能な場合も同じとする。送信済みの可能性があるため再送せず、観測できた送信後snapshotと確認不能な点をユーザーへ報告する。
