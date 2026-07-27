@@ -61,7 +61,7 @@ git -C <cwd> rev-parse --path-format=absolute --git-common-dir
 
 Git snapshot取得後にsame-repoの`target-scoped` task `cwd`をworktreeへ対応付けるときは、task `cwd`と各worktree pathをcanonical absolute pathへ正規化し、path separator境界を含む包含判定を行う。`cwd`と同一、または`cwd`を含む候補のうち最長pathを選ぶ。候補なし、canonicalize失敗、同じ長さの候補が複数ある場合はtaskを`unscoped`としてfail closedにする。文字列prefixだけで`/repo`を`/repo-other`へ対応付けない。
 
-task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live status、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turn、同じtaskをcursorで過去へ辿って復元したcurrent semantic scope、およびそれとは独立したlifecycle hazard chainから作る。`y`、`continue`、短い承認、代名詞や参照だけのuser messageを単独のscope anchorにしない。最新turnから、現在の作業を定義する最後のsubstantive user request、それ以後のuser修正、短い返答が直接参照する完了済みassistant提案、file、symbol、責務、仕様の追加または変更を明示したstableなassistant message item、およびstableなtool invocation itemまで必要なpageだけを辿り、予定scopeと未着手項目を復元する。
+task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live status、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turn、同じtaskをcursorで過去へ辿って復元したcurrent semantic scope、およびそれとは独立したlifecycle hazard chainから作る。`y`、`continue`、短い承認、代名詞や参照だけのuser messageを単独のscope anchorにしない。最新turnから、現在の作業を定義する最後のsubstantive user request、それ以後のuser修正、短い返答が直接参照する完了済みassistant提案、file、symbol、責務、仕様の追加または変更を明示したstableなassistant message item、およびstableなtool invocation itemまで必要なpageだけを辿り、予定scopeと未着手項目を復元する。同じsubstantive request / proposalを参照する新しい短い返答は既存anchorを再利用し、新しいanchorを増やさない。短い返答の後にassistantがfile、symbol、責務、仕様を追加または変更した場合だけ、そのstable messageを新しいscope anchorにする。
 
 lifecycle hazard chainはcurrent request boundaryで打ち切らない。各taskについて、最後の検証済みlifecycle watermarkから現在まで、watermarkがなければ取得可能なfull historyを走査し、target-relevantな`mutating-or-unknown` invocationとそのdescendant / background / scheduled actionを集める。watermarkは最後に完全走査したitem boundaryと、未終了hazardのexact item ID、routing、effect、lifecycleをstable provenanceへ保持する。新しいsubstantive requestやscope reset後も、process treeとdurable actionのterminal completionを確認するまでhazardをtask snapshot / fingerprintへ残す。完全な開始boundaryまたはwatermarkまでhistoryを取得できない、hazard lifecycleがpartial / unknown、または終了を確認できなければtaskを`unscoped`とする。semantic scopeは狭めてもunfinished lifecycle evidenceを破棄しない。
 
@@ -79,15 +79,17 @@ lifecycle hazard chainはcurrent request boundaryで打ち切らない。各task
 
 `task-owned`かつtarget-relevantなtool invocation evidenceはscope anchor chainへ含める。message / tool anchorは古いturnから新しいturn、同一turn内のitem順で並べる。anchor chainが完成する前にcursor pageを取得できない、参照先が一意でない、または必要なhistoryがpartial / truncatedならfail closedにする。
 
-scope fingerprintには、最新turnのID、status、`startedAt`、`completedAt`、error、決定的な順序のscope anchor chain、独立したlifecycle hazard chainを含める。message anchorはturn ID、item ID、role、exact UTF-8 contentのSHA-256で表す。target-relevant tool anchorとhazard anchorはturn ID、item ID、tool名、canonical argumentsのSHA-256、解決済みtarget path / identity、effect、lifecycle class、未終了descendant identityで表し、secretを平文へ残さない。canonical argumentsはobject keyをsortし、array順とscalar値を保つ。tool output / result本文はfingerprintへ含めない。AIが再構成したsemantic scopeやその要約、reasoning、生成途中のoutput block、target-relevantでないtool activity、exactに対応した`guard-owned` itemはfingerprintへ含めない。stableなassistant scope拡張、`task-owned` target-relevant tool evidence、未終了hazardは必ずanchor / hazard chainとfingerprintへ含める。caller taskを一意に特定できない場合はfail closedにする。
+task snapshotの安定性比較には`semantic conflict fingerprint`を使う。fingerprintはtask ID / `hostId`、canonical local identity、hosted binding requirement state / optional identity、final classification、non-nullなterminal error class、決定的な順序のscope anchor chain、独立したlifecycle hazard chainから作る。message anchorはitem ID、role、exact UTF-8 contentのSHA-256で表す。target-relevant tool anchorとhazard anchorはitem ID、tool名、canonical argumentsのSHA-256、解決済みtarget path / identity、effect、lifecycle class、未終了descendant identityで表し、secretを平文へ残さない。canonical argumentsはobject keyをsortし、array順とscalar値を保つ。
+
+最新turn ID、live status、`startedAt`、`completedAt`、同じscopeを参照する短い返答、reasoning、生成途中のoutput block、target-relevantでないtool activity、exactに対応した`guard-owned` itemは`semantic conflict fingerprint`へ含めない。これらはlive stateの報告とqueue可否には使うが、scope不変のsnapshotを無効化しない。stableなassistant scope拡張、`task-owned` target-relevant tool evidence、repository routing / classificationの変化、terminal error、未終了hazardは必ずanchor / hazard chainとfingerprintへ含める。caller taskを一意に特定できない場合はfail closedにする。
 
 task inventoryのcoverageは、`exhaustive`または`bounded latest N`として記録する。`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満なら`exhaustive`とする。返却件数がsupported maximum limitと同数で次page cursorがない場合は、その返却集合を`bounded latest N`として使う。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
 
-`bounded latest N`はtask履歴全体のcomplete inventoryではない。initial、A、Bを同じlimitで取得し、返却されたN件すべてのtask集合、status、scope fingerprintの一致を要求する。N件より古いtaskのstatus / scope fingerprintは未確認であり、clean worktreeは未着手scope ownershipがない証拠にならない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
+`bounded latest N`はtask履歴全体のcomplete inventoryではない。initial、A、Bを同じlimitで取得し、各passで全taskを読み直して分類する。安定性比較は`target-scoped`と`unscoped` taskの`semantic conflict fingerprint`集合に限定する。`outside-repo` taskの追加、脱落、並び順、live status、同一scope内の新turnだけではsnapshotを無効化しない。`outside-repo`から`target-scoped` / `unscoped`へ変化したtask、またはその逆は比較集合が変わるため再取得またはblockする。N件より古いtaskのscope ownershipは未確認であり、clean worktreeは未着手scope ownershipがない証拠にならない。Git側はcoverageにかかわらず、全登録worktreeを含むcomplete snapshotを必須とする。
 
-bounded coverageでもGit / task snapshotの収集と既知のred判定までは続けるが、未知の古いownershipが残るため`green`または「安全」と判定しない。結果は`coverage-limited`として、N、未確認範囲、予定scope、残るriskをユーザーへ示す。提示時にはfingerprint文字列を含まないdeterministicな`riskMessageBody`を先に固定する。bodyはcoverage種別 / N、target local / hosted repository identity、返却順のtask ID / `hostId` / status / scope fingerprint、oldest visible task boundary identity、予定scope anchor chain、未確認範囲の説明というstable risk factsだけを固定順でrenderする。guard run ID、guard開始 / 終了boundary、invocation item ID / ordinal、`recordHash`、実行timestampなどrun固有のprovenance値をbodyへ含めず、provenance表示は別の`guard provenance record` itemに限定する。そのexact UTF-8 body SHA-256を同じstable risk factsとともにRFC 8785 JCS payloadへ入れ、run固有のprovenance fieldはrisk payloadへ入れない。このpayloadのSHA-256 lowercase hexadecimalを`coverage risk fingerprint`として承認対象にする。表示messageはexact `riskMessageBody`の直後へ固定形式の`\n\ncoverage risk fingerprint: <fingerprint>` suffixだけを付ける。suffixを`riskMessageBody`またはそのcontent hashへ含めない。
+bounded coverageでもGit / task snapshotの収集と既知のred判定までは続けるが、未知の古いownershipが残るため、後述の`owner-verified retirement`以外を`green`または「安全」と判定しない。結果は`coverage-limited`として、N、未確認範囲、予定scope、残るriskをユーザーへ示す。提示時にはfingerprint文字列を含まないdeterministicな`riskMessageBody`を先に固定する。bodyはcoverage種別 / N、target local / hosted repository identity、`target-scoped` / `unscoped` taskのtask ID / `hostId` / `semantic conflict fingerprint`、予定scope anchor chain、未確認範囲の説明というstable risk factsだけを固定順でrenderする。`outside-repo` task、live status、oldest visible task boundary、guard run ID、guard開始 / 終了boundary、invocation item ID / ordinal、`recordHash`、実行timestampなどsemantic ownershipと無関係な値をbodyへ含めない。provenance表示は別の`guard provenance record` itemに限定する。そのexact UTF-8 body SHA-256を同じstable risk factsとともにRFC 8785 JCS payloadへ入れ、run固有のprovenance fieldはrisk payloadへ入れない。このpayloadのSHA-256 lowercase hexadecimalを`coverage risk fingerprint`として承認対象にする。表示messageはexact `riskMessageBody`の直後へ固定形式の`\n\ncoverage risk fingerprint: <fingerprint>` suffixだけを付ける。suffixを`riskMessageBody`またはそのcontent hashへ含めない。
 
-coverage risk専用projectionではcallerの提示中turnだけ、volatileなstatus / `startedAt` / `completedAt` / errorを含むturn lifecycle envelopeを使わず、turn ID、提示直前のimmutable item boundary、そこまでの正規化済みscope anchor chain SHA-256へ置換する。提示するrisk messageは発行前に`riskMessageBody` hash、固定suffix形式、期待順を承認対象へ固定し、item IDは発行後の履歴照合にだけ使う。直後のturnがexact risk fingerprintへの明示的なapprovalだけの場合、approval message直後かつ再guard最初のtool call前にrun boundaryを固定する。再guardでは、提示turnがterminal successであること、固定boundary後に承認済みbody hash / suffixと順序へexactに対応するrisk message / provenance record以外のscope追加、message anchor、task-owned target-relevant tool invocationがないことをfull historyで検証し、固定boundaryまで同じ専用projectionを再構成する。prior runのprovenance recordとcurrent runのledger / recordは、それぞれのrun ID、boundary、item対応、`recordHash`を使ってrisk fingerprint equalityとは別に完全検証する。そのうえでapproval turnのlifecycle envelope、承認message、exactに対応した再guardの`guard-owned` itemだけをcoverage risk比較から除外する。partial history、terminal error、provenance検証失敗、追加item、scope追加、別のsubstantive request、またはledger外のtask-owned target tool invocationが1件でもあれば古い承認を使わず再承認を要求する。各guard run内の生scope fingerprint比較は、exact guard-owned item以外を正規化せず、turn lifecycle metadataを含めて従来どおり完全一致を要求する。ユーザーがそのfingerprintで特定されたriskを受け入れて進行を指示した場合だけ、同じNでguard全体を再実行する。approval-only projectionを適用した再実行後のrisk fingerprintが完全一致し、安定した最新snapshotで既知のyellow / redがない場合だけ開始できる。1項目でも変われば古い承認を失効させ、変更後のriskとfingerprintを提示して再承認を求める。この場合も判定名と報告は`coverage-limited override`であり、task inventory completeまたはgreenとは表現しない。
+coverage risk専用projectionではcallerの提示中turnを、turn IDやlifecycle envelopeではなく、提示直前のimmutable item boundaryとそこまでの正規化済みscope anchor chain SHA-256で表す。提示するrisk messageは発行前に`riskMessageBody` hash、固定suffix形式、期待順を承認対象へ固定し、item IDは発行後の履歴照合にだけ使う。直後のturnがexact risk fingerprintへの明示的なapprovalだけの場合、approval message直後かつ再guard最初のtool call前にrun boundaryを固定する。再guardでは、提示turnがterminal successであること、固定boundary後に承認済みbody hash / suffixと順序へexactに対応するrisk message / provenance record以外のscope追加、task-owned target-relevant tool invocationがないことをfull historyで検証し、固定boundaryまで同じ専用projectionを再構成する。prior runのprovenance recordとcurrent runのledger / recordは、それぞれのrun ID、boundary、item対応、`recordHash`を使ってrisk fingerprint equalityとは別に完全検証する。そのうえでapproval messageとexactに対応した再guardの`guard-owned` itemだけをcoverage risk比較から除外する。partial history、terminal error、provenance検証失敗、scope追加、別のsubstantive request、repository routing / classification変化、hazard変化、またはledger外のtask-owned target tool invocationが1件でもあれば古い承認を使わず再承認を要求する。同じscopeを参照する短い返答、live status、turn lifecycle、`outside-repo` taskの更新だけでは承認を失効させない。ユーザーがそのfingerprintで特定されたriskを受け入れて進行を指示した場合だけ、同じNでguard全体を再実行する。再実行後のrisk fingerprintが完全一致し、安定した最新snapshotで既知のyellow / redがない場合だけ開始できる。semantic conflict projectionが1項目でも変われば古い承認を失効させ、変更後のriskとfingerprintを提示して再承認を求める。この場合も判定名と報告は`coverage-limited override`であり、task inventory completeまたはgreenとは表現しない。
 
 # Ugen Preflight
 
@@ -104,7 +106,7 @@ timeoutまたは強制終了は1回の実行を消費した契約違反とし、
 
 - `schemaVersion === 1`、`complete === true`、`refreshed === true`
 - `baseline`はobject、`ref === "origin/main"`、`sha`は空でないstring
-- `worktrees`はobjectのarray。`path`と`head`はstring、`branch`、`lockReason`、`prunableReason`はstringまたは`null`、`detached`、`locked`、`prunable`はboolean
+- `worktrees`はobjectのarray。`path`と`head`はstring、`branch`、`lockReason`、`prunableReason`はstringまたは`null`、`detached`、`locked`、`prunable`はboolean。任意の`ownerThreadId`と`ownerGeneration`は、存在する場合だけstringまたは`null`
 - 各`changes`はobjectで、`committed`、`staged`、`unstaged`、`untracked`、`allPaths`はstringのarray
 - `fileOverlaps`はobjectのarrayで、各`worktreePaths`と`paths`はstringのarray
 - `errors`はobjectのarrayで、各`code`と`message`、任意の`worktreePath`はstring。開始判断時は空
@@ -112,6 +114,18 @@ timeoutまたは強制終了は1回の実行を消費した契約違反とし、
 scriptが存在するのに、実行失敗、非zero終了、JSON parse失敗、型不正、未知のschema、欠けたkey、`complete: false`、`refreshed: false`のいずれかになった場合はfail closedとする。個別Git commandへfallbackして開始可能と判定してはならない。
 
 従来の個別Git確認へfallbackできるのは、repo rootの解決に成功した後、正確なscript pathの存在確認が`ENOENT`を返した場合だけとする。権限、I/O、root解決、script実行時の`ENOENT`を含む他の失敗はすべてfail closedとする。validなpreflightの`changes`を対応worktreeのGit差分証拠として使い、同じ状態を個別commandで再収集しない。
+
+## Owner-Verified Retirement
+
+予定scopeが現在worktreeの退役だけの場合、validなUgen preflightが返すdurable ownershipを一次証拠にできる。次をすべて満たす場合だけ`owner-verified retirement`とする。
+
+- caller task IDがtrusted metadataまたは完全なprovenance照合で一意に確定している
+- 対象worktreeの`ownerThreadId`がcaller task IDと完全一致する
+- `ownerGeneration`がnon-emptyで、対象worktreeの同じpath / branch / HEAD / owner tupleがGit snapshot内で一意である
+- planned actionがUgenのowner / generation再検証を行う退役entry pointだけであり、そのentry pointが契約するqueue state以外のworktree、branch、file、remote stateを追加で変更しない
+- caller以外の既知の`target-scoped` taskに同じworktree、branch、退役責務の所有者がなく、`unscoped` task、unfinished hazard、Git errorがない
+
+この条件では`bounded latest N`より古いtaskが同じworktreeを所有するという推測よりdurable owner leaseを優先し、coverage approvalを要求せず退役できる。判定名は`owner-verified retirement`とし、exhaustive coverageまたは`green`とは呼ばない。owner fieldの欠落、空値、不一致、tuple重複、planned scopeの拡張、退役entry pointの再検証不能があればこの例外を使わず、通常の`coverage-limited` / yellow / red判定へ戻す。
 
 # Fallback Git Snapshot
 
@@ -137,7 +151,7 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 2. 正確なscript path lookupのexact invocationをledgerへ追加し、結果を存在、`ENOENT`、その他のinspection errorに分類する。この時点ではpreflightもfallback Git状態収集もまだ実行しない。
 3. `list_threads`をqueryなし・supported maximum limitで呼び、task inventory coverageを`exhaustive`または`bounded latest N`として記録する。返却件数がlimitと同数でnext page cursorがなくても、既知の競合調査は続行する。返却された各Codex task `cwd`を`repo-candidate`、`outside-candidate`、`unscoped`へ一次分類する。tool responseがpartial、明示的なtruncation error、またはsource unavailableを示す場合は停止する。
 4. 返却された全Codex taskを`read_thread(turnLimit: 1, includeOutputs: false)`で確認し、必要なtaskだけ同じtaskのcursorで過去へ辿ってscope anchor chainと独立したlifecycle hazard chainを復元する。structured hosted selectorを観測した時だけhosted bindingを`required`として解決する。cwd一次分類、scope、hazardの全てから`target-scoped`、`outside-repo`、`unscoped`を確定し、caller task、ID、`hostId`、live `status`、現在scope、未着手項目、未終了hazard、latest turn snapshotを保存する。provisional callerはorigin boundaryとledger call sequenceを含むtaskがexactに1件の場合だけbindingする。このpassで全Codex taskのsnapshot、anchor chain、hazard chainが構造的に完全であることを確認する。partial、矛盾、scope / hazard復元不能、またはcaller binding不能ならfinal initial read passへ進まず、provisional provenance recordを残して停止する。
-5. hosted bindingが`required`の場合だけ同じ規則で再解決してから、全Codex taskを同じ引数とscope / hazard復元規則で再取得してfinal initial read passを作る。各passでouter runのappend-only ledgerをexact item IDへ一意に対応し、callerのscope anchor / fingerprintからそのitemだけを除外する。最初のpassとtask ID、`hostId`、canonical local identity、hosted binding requirement state / optional identity、`cwd`、live status、正規化後のscope anchor chain、lifecycle hazard chain、scope fingerprint、final classificationが一致し、unfinishedなtarget-relevant `mutating-or-unknown` invocationがなく、全callが完全なら、最後の`read_thread`の次のtool callとしてGit snapshot取得を開始する。差分または失敗があればGit snapshotを取らず、同じouter run ID / origin boundary / ledgerを維持したままattempt番号とattempt boundaryを追加し、Workflow 9と共有する全体retry制限に従ってWorkflow 1相当から再収集する。
+5. hosted bindingが`required`の場合だけ同じ規則で再解決してから、全Codex taskを同じ引数とscope / hazard復元規則で再取得してfinal initial read passを作る。各passでouter runのappend-only ledgerをexact item IDへ一意に対応し、callerのscope anchor / fingerprintからそのitemだけを除外する。全taskを読み直して分類したうえで、最初のpassと`target-scoped` / `unscoped` taskの`semantic conflict fingerprint`集合が一致し、unfinishedなtarget-relevant `mutating-or-unknown` invocationがなく、全callが完全なら、最後の`read_thread`の次のtool callとしてGit snapshot取得を開始する。live statusや同一scope内のturnだけが変わったtaskは最新値を報告用snapshotへ採用する。semantic conflict projectionの差分または失敗があればGit snapshotを取らず、同じouter run ID / origin boundary / ledgerを維持したままattempt番号とattempt boundaryを追加し、Workflow 9と共有する全体retry制限に従ってWorkflow 1相当から再収集する。
 6. scriptが存在する場合は120秒のhard deadlineでUgen preflightを1回実行して契約を検証し、発行したexact invocationをguard-owned ledgerへ追加する。invalidまたはtimeoutならGit証拠を不完全として開始・競合判定をblockする。
 7. path lookupが`ENOENT`を返した場合だけ、fallback Git snapshotを集める。
    - `git worktree list --porcelain -z`
@@ -149,12 +163,12 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
    2. Aの全Codex taskを同じ引数とscope復元規則の`read_thread`で取得してscope Aとfinal classificationを作る。
    3. hosted bindingが`required`の場合だけ同じ規則でもう一度解決し、initialと同じlimitの`list_threads`とrepository identityの対応付けからinventory Bを作り、coverageを記録する。guardが発行した各repository identity probeをpurpose付きでguard-owned ledgerへ追加する。
    4. Bの全Codex taskを同じ引数とscope復元規則の`read_thread`で取得してscope Bとfinal classificationを作る。
-   post-readでorigin boundary後にある全attemptのledger項目を発行順、tool名、canonical argumentsからexact item IDへ一意に対応付ける。callerだけ、そのexact `guard-owned` itemをA / Bのscope anchor / fingerprintから除外し、他のitemと他taskには同じ除外を適用しない。全taskを再分類し、final initial、A、Bで、全返却taskのcoverage、task ID、`hostId`、identity classification、canonical local identity、hosted binding requirement state / optional identity、`cwd`、live status、正規化後のscope anchor chain、lifecycle hazard chain、scope fingerprint、final classificationが一致し、unfinishedなtarget-relevant `mutating-or-unknown` invocationがないことを要求する。`bounded latest N`の境界変化、hosted binding requirement / identityの変化や`outside-repo` / `target-scoped` / `unscoped`間の変化もtask集合の差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockし、同じouter run ID / origin boundary / append-only ledgerのまま次attemptへ進む。taskまたはGit inventory変化による全体retryは共有して1回までとし、再び変化した場合はinventory unstableとして全attemptを含むrecordを残して停止する。
+   post-readでorigin boundary後にある全attemptのledger項目を発行順、tool名、canonical argumentsからexact item IDへ一意に対応付ける。callerだけ、そのexact `guard-owned` itemをA / Bのscope anchor / fingerprintから除外し、他のitemと他taskには同じ除外を適用しない。各passで全taskを読み直して再分類し、final initial、A、Bで`target-scoped` / `unscoped` taskの`semantic conflict fingerprint`集合が一致し、unfinishedなtarget-relevant `mutating-or-unknown` invocationがないことを要求する。`outside-repo` taskの追加、脱落、順序、live status、同一scope内のturn変化は差分にしない。hosted binding requirement / identity、repository routing、scope anchor、hazard、または`outside-repo` / `target-scoped` / `unscoped`間の分類が変わればsemantic conflict projectionの差分として扱う。差分があれば新しいtaskを古いGit snapshotへ追加せず、開始判断をblockし、同じouter run ID / origin boundary / append-only ledgerのまま次attemptへ進む。semantic conflict projectionまたはGit inventory変化による全体retryは共有して1回までとし、再び変化した場合はinventory unstableとして全attemptを含むrecordを残して停止する。
 10. same-repoの`target-scoped` taskだけ、`cwd`をcanonical absolute worktree pathへ境界付き最長一致で対応付ける。対応不能または同長の複数候補は`unscoped`とする。cross-repoの`target-scoped` taskはcwdをworktreeへ対応付けず、復元したscopeをplanned ownershipの証拠として全worktreeと新しい予定scopeへ直接比較する。対応する対象worktreeやGit diffがまだなくても、このplanned ownershipを破棄または縮小しない。validなpreflightでは`changes`を実際にmaterializeしたGit差分証拠、`fileOverlaps`を既存worktree同士の重複候補抽出に使うが、それだけで競合と断定しない。
-11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、target-scoped task inventory、`unscoped` taskを分けて報告し停止する。coverageが`bounded latest N`なら既知の競合判定後も`green`にせず、`coverage-limited`としてユーザー判断を求める。
+11. Git証拠が不完全、task sourceがpartial / error、callerを一意に特定できない、または`unscoped` taskが残る場合は、契約違反、target-scoped task inventory、`unscoped` taskを分けて報告し停止する。coverageが`bounded latest N`なら既知の競合判定後も`green`にせず、`owner-verified retirement`の全条件を満たす退役だけはcoverage approvalなしで許可し、それ以外は`coverage-limited`としてユーザー判断を求める。
 12. 新しい作業の予定file、symbol、責務、仕様を、live taskとの対応有無にかかわらず、変更のある全worktreeの`changes`と比較する。
-13. live taskの現在scopeとcoverageを加えてcoverage-limited / green / yellow / redを判定する。
-14. exhaustive coverageでgreen / yellowなら作業領域を提案する。bounded coverageでは、承認された`coverage risk fingerprint`と再guard後のfingerprintが完全一致した`coverage-limited override`の場合だけ作業領域を提案する。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
+13. live taskの現在scopeとcoverageを加えてcoverage-limited / owner-verified retirement / green / yellow / redを判定する。
+14. exhaustive coverageでgreen / yellowなら作業領域を提案する。bounded coverageでは、`owner-verified retirement`の条件を満たす退役、または承認された`coverage risk fingerprint`と再guard後のfingerprintが完全一致した`coverage-limited override`だけを実行できる。ユーザーが作成まで求めたら、その場でbranch / worktreeを作る。
 15. `red`でも同じ所有taskが続けるのが適切なら、新しい作業領域を作らず、global `AGENTS.md`の後続依頼ルールに従う。
 16. guard後にcallerが予定file、symbol、責務、仕様を追加または変更する場合は、stableなassistant messageで追加scopeを明示し、そのscopeへ最初に編集または外部変更を行う前にguard全体を再実行する。元のguard結果を拡張scopeへ流用しない。
 17. 開始可否、停止、または再実行要求をユーザーへ返す直前に、outer runの全attemptを含むversioned `guard provenance record`とlifecycle watermarkをstableなassistant message itemとして残す。早期停止でも発行済みattemptを省略せず、caller / item対応不能なら`complete: false`、caller fields / `itemId`を`null`で残す。recordを後続runのscope anchorにせず、完全なorigin / attempt boundary historyで一意にcaller binding・補完・照合できたexact invocationだけをhistorical `guard-owned`として扱う。watermarkは完全走査済みboundaryと未終了hazardを保持し、scope resetで消さない。
@@ -164,6 +178,10 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 - `coverage-limited`
   - latest Nより古いtaskのscope ownershipが未確認
   - 既知のyellow / redがなくてもgreenとは呼ばない
+- `owner-verified retirement`
+  - bounded coverageでもpreflightのowner task / generationがcallerと一致する
+  - 予定scopeは所有者を再検証する現在worktreeの退役だけ
+  - 既知の重複所有、unfinished hazard、Git errorがない
 - `green`
   - task inventory coverageがexhaustive
   - 別 worktree で、対象ファイルと feature area が重ならない
@@ -183,6 +201,7 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 | State | Action |
 | --- | --- |
 | `coverage-limited` | Nと未知のownership riskを示してユーザー判断を待つ。進行指示後も再guardし、`coverage-limited override`と報告する |
+| `owner-verified retirement` | owner / generationを再検証するUgen退役entry pointだけを実行する |
 | `green` | 独立した作業領域で進める |
 | `yellow` | 別worktreeで編集領域と統合順序を明示して進める |
 | `red`かつ既存所有セッションが続ける | visible scope内なら事前説明して後続キューへ積む。scope拡張なら送信しない |
@@ -240,7 +259,7 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 1. 今の自分の作業とぶつかるか
 2. Git状態の取得元（preflightまたはfallback）と完全性
 3. live `status`とscopeを確認したsame-repo / cross-repoの`target-scoped` task、scope確認後に除外した`outside-repo` task、identityまたはscope未確認の`unscoped` task
-   - task inventory coverageが`bounded latest N`なら、N、「それより古いtaskは未確認」、判定が`coverage-limited`であることを明記する
+   - task inventory coverageが`bounded latest N`なら、N、「それより古いtaskは未確認」、判定が`coverage-limited`または`owner-verified retirement`であることを明記する
 4. 重複または競合の根拠
 5. 推奨する作業領域
 6. 後続キューへ積んだ場合は、対象セッション名・ID・受付状態
@@ -248,8 +267,9 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 
 # Notes
 
+- snapshot安定性またはdurable ownership規約を変更するときは、[Stability Evaluations](EVALUATIONS.md)の対になったfixtureをRED→GREENで確認する。
 - taskのactive / idleは必ず`list_threads`のlive `status`で判断する。
-- `bounded latest N`をtask履歴全体のcomplete inventoryまたはgreenと呼ばない。競合判定は「最新N件のscopeと全worktreeのGit状態に基づくcoverage-limited判定」と表現する。
+- `bounded latest N`をtask履歴全体のcomplete inventoryまたはgreenと呼ばない。通常は「最新N件のscopeと全worktreeのGit状態に基づくcoverage-limited判定」、durable owner leaseを使う退役だけは`owner-verified retirement`と表現する。
 - repository identityはtaskの通常の所属先を絞る一次証拠にだけ使い、対象repoへ関与しない証拠またはGit状態の証拠として扱わない。
 - task確認より前に取得したGit snapshotからgreen / yellowを判定しない。
 - このguardは時点をそろえたsnapshot確認でありlockではない。開始可能と判断した作業領域は直ちに使い、新しいtask / worktree activity、stableなassistant messageによるscope拡張を観測した場合や開始が遅れて鮮度を保証できない場合は、そのscopeへの編集前にguardをやり直す。
