@@ -7,7 +7,7 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 
 複数の Codex セッションを同時に進める前に、最近の作業と現在の Git 状態を照合し、競合しにくい作業領域を決める。
 
-**Core principle:** 同じbranch、編集領域、または設計責任の所有者を増やさない。ファイルの重複だけでは競合と断定せず、変更するsymbol・責務・仕様を比較する。所有セッションが実行中なら、そのturnを中断しない。後続依頼が現在のvisible scope内ならユーザーへ説明してからキューへ積み、scopeを拡張するならidleになるまで待つかユーザーへ報告する。
+**Core principle:** 同じbranch、編集領域、または設計責任の所有者を増やさない。ファイルの重複だけでは競合と断定せず、変更するsymbol・責務・仕様を比較する。所有セッションのturnを中断しない。後続依頼は対象taskの現在のvisible scope内に完全に含まれる場合だけ、ユーザーへ説明してからキューへ積む。scopeを拡張する依頼は対象taskのidle / runningにかかわらず送信しない。
 
 このskillはCodex appのtask inventory toolsを前提とするCodex専用skillである。Claude / Grok runtimeへ同期したり、それらのruntimeでGit証拠だけに縮退して実行したりしない。
 
@@ -45,10 +45,10 @@ description: Use when work may overlap another Codex session, branch, worktree, 
 repository identityの確認では、repo rootと各task `cwd`のcanonical common Git directoryだけを比較する。これはtaskのrepo所属を絞るための確認であり、branch、worktree一覧、HEAD、dirty state、diffを収集しない。結果は`repo-scoped`、`outside-repo`、`unscoped`へ分類する。
 
 - common Git directoryが対象repoと一致するtaskは`repo-scoped`
-- canonical cwdが対象repo rootと同一またはpath separator境界付き祖先なら、common Git directoryが別repositoryでも対象repoへ移動できるため`unscoped`
-- canonical common Git directoryの解決に成功し、対象repoと不一致で、canonical cwdが対象repo rootのpath separator境界付き祖先でもないtaskは`outside-repo`
-- canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがなく、対象repo rootと同一でもpath separator境界付き祖先でもないtaskは`outside-repo`
-- non-Gitのcanonical cwdが対象repo rootと同一またはpath separator境界付き祖先なら、taskが対象repoへ移動できるため`unscoped`
+- canonical cwdが対象repo rootと同一、path separator境界付き祖先、またはpath separator境界付き子孫なら、common Git directoryが別repositoryでも対象repoへ移動できるため`unscoped`
+- canonical common Git directoryの解決に成功し、対象repoと不一致で、canonical cwdと対象repo rootがpath separator境界付き包含のどちらの向きにも該当しないtaskは`outside-repo`
+- canonical cwdの存在・access確認に成功し、安定化したlocaleで明確な`not a git repository`が返り、cwdからfilesystem rootまで`.git` markerがなく、canonical cwdと対象repo rootがpath separator境界付き包含のどちらの向きにも該当しないtaskは`outside-repo`
+- non-Gitのcanonical cwdが対象repo rootと同一、path separator境界付き祖先、またはpath separator境界付き子孫なら、taskが対象repoへ移動できるため`unscoped`
 - permission、I/O、cwd消失、canonicalize、timeout、tool、dubious ownership、壊れた`.git`、未知の失敗は`unscoped`
 
 `outside-repo`はrepo inventoryから除外するが、task ID、cwd、分類理由、解決済みならcanonical common Git directoryを記録する。`unscoped`はfail closed対象とする。
@@ -59,9 +59,9 @@ git -C <cwd> rev-parse --path-format=absolute --git-common-dir
 
 Git snapshot取得後にtask `cwd`をworktreeへ対応付けるときは、task `cwd`と各worktree pathをcanonical absolute pathへ正規化し、path separator境界を含む包含判定を行う。`cwd`と同一、または`cwd`を含む候補のうち最長pathを選ぶ。候補なし、canonicalize失敗、同じ長さの候補が複数ある場合はtaskを`unscoped`としてfail closedにする。文字列prefixだけで`/repo`を`/repo-other`へ対応付けない。
 
-task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live status、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turnと、同じtaskをcursorで過去へ辿って復元したcurrent scopeから作る。`y`、`continue`、短い承認、代名詞や参照だけのuser messageを単独のscope anchorにしない。最新turnから、現在の作業を定義する最後のsubstantive user request、それ以後のuser修正、短い返答が直接参照する完了済みassistant提案まで必要なpageだけを辿り、予定file、symbol、責務、仕様、未着手項目をscope anchor chainとして復元する。anchor chainが完成する前にcursor pageを取得できない、参照先が一意でない、または必要なhistoryがpartial / truncatedならfail closedにする。
+task snapshotは、`list_threads`のtask ID、`hostId`、canonical repository identity、`cwd`、live status、`read_thread(turnLimit: 1, includeOutputs: false)`の最新turnと、同じtaskをcursorで過去へ辿って復元したcurrent scopeから作る。`y`、`continue`、短い承認、代名詞や参照だけのuser messageを単独のscope anchorにしない。最新turnから、現在の作業を定義する最後のsubstantive user request、それ以後のuser修正、短い返答が直接参照する完了済みassistant提案まで必要なpageだけを辿り、予定file、symbol、責務、仕様、未着手項目をscope anchor chainとして復元する。anchor itemは古いturnから新しいturn、同一turn内のitem順で並べる。anchor chainが完成する前にcursor pageを取得できない、参照先が一意でない、または必要なhistoryがpartial / truncatedならfail closedにする。
 
-scope fingerprintには、最新turnのID、status、`startedAt`、`completedAt`、error、scope-defining user itemのIDとexact UTF-8 contentのSHA-256、直接参照された完了済みassistant itemのIDとcontent SHA-256、normalized reconstructed scopeのSHA-256だけを含める。reasoning、tool activity、active turnで増加中のassistant outputは作業進捗で変化するためfingerprintへ含めない。caller taskを一意に特定できない場合もfail closedにする。
+scope fingerprintには、最新turnのID、status、`startedAt`、`completedAt`、errorと、決定的な順序のscope anchor chainだけを含める。各anchorはturn ID、item ID、role、exact UTF-8 contentのSHA-256で表す。AIが再構成したsemantic scopeやその要約は安定性tokenに使わない。reasoning、tool activity、active turnで増加中のassistant outputも作業進捗で変化するためfingerprintへ含めない。caller taskを一意に特定できない場合はfail closedにする。
 
 task inventoryのcoverageは、`exhaustive`または`bounded latest N`として記録する。`list_threads`が明示的にexhaustedを返す、または返却件数が指定limit未満なら`exhaustive`とする。返却件数がsupported maximum limitと同数で次page cursorがない場合は、その返却集合を`bounded latest N`として使う。cursorがある場合は同じsnapshot系列のpageをexhaustedまで取得し、重複・欠落・source unavailableがないことを検証する。
 
@@ -188,7 +188,7 @@ fallbackでは収集前のworktree inventory Aに、canonical path、HEAD SHA、
 **REQUIRED POLICY:** global `AGENTS.md`の「別セッションへの後続依頼」を正本として従う。このskillではユーザーへの事前説明、非割り込み、キュー受付と着手の区別を再定義しない。
 
 - 送信前に`read_thread(turnLimit: 1, includeOutputs: false)`でactive turn snapshotを保存し、同じscope復元規則で対象taskのcurrent scopeを確認する。正確な依頼先、live状態、current scope、非割り込みのキュー動作を確認できない場合は送信しない。
-- 対象taskが実行中なら、follow-upの予定file、symbol、責務、仕様が、snapshotで確認できる対象taskの現在scopeにすべて含まれる場合だけ送信する。この場合は既に見えているscopeがownershipを保持する。follow-upが現在scopeを拡張する場合、current toolsではqueued scopeを後続guardが再取得できるdurable reservationとして保存できないため送信せず、対象taskがidleになるまで待つかユーザーへ報告する。
+- follow-upの予定file、symbol、責務、仕様が、snapshotで確認できる対象taskの現在scopeにすべて含まれる場合だけ送信する。この条件は対象taskのidle / runningにかかわらず必須とし、既に見えているscopeがownershipを保持する。follow-upが現在scopeを拡張する場合、current toolsではobserved statusを条件にしたatomic sendも、後続guardが再取得できるdurable reservationもないため送信しない。対象taskでのユーザー操作など、`send_message_to_thread`を使わない明示的な調整が必要と報告する。
 - task IDと`hostId`を`send_message_to_thread`へ渡して1回だけ送信し、結果から対象taskとacceptance / dispositionを記録する。
 - `send_message_to_thread`がsuccess、timeout、transport error、不明な結果のいずれでも再送しない。送信済みの可能性を保持したまま、取得可能なら同じ引数の`read_thread`を1回だけ取得し、送信前snapshotと比較する。
 - send resultがacceptanceを確認し、旧turnが継続中または一致する新turnがまだなければ`accepted / queued`と報告し、着手済みと呼ばない。これは受付状態だけを表し、新しいownership予約とは扱わない。対象taskの送信前scopeに含まれないfollow-upをこの状態へ進めてはならない。
