@@ -36,7 +36,10 @@ Review only:
 
 Do not raise production-code findings unless they explain a test-quality finding.
 
-Do not review general code style, broad architecture, naming, comments, or non-test duplication unless it directly affects test confidence.
+Do not review general code style, broad architecture, naming, comments, or
+non-test duplication unless it directly affects test confidence. Test names
+are the exception: the test-name question applies to every added or changed
+test.
 
 ## Review Questions
 
@@ -95,23 +98,35 @@ Block only when one of these applies to the changed behavior or selected risk:
 - a test would fail after a behavior-preserving refactor
 - a fixture, mock, or snapshot is inconsistent with the real contract
 
-Warnings are allowed for lower-risk gaps such as missing edge cases, excess setup, test duplication that does not reduce confidence, or an implementation-coupled test name. A name alone is blocking only when it reveals that the test itself verifies implementation details rather than behavior.
+Warnings are allowed for lower-risk gaps such as missing edge cases, excess
+setup, or test duplication that does not reduce confidence. An
+implementation-coupled test name is an actionable warning when the test itself
+still verifies behavior; it is blocking when it reveals that the test verifies
+implementation details rather than behavior.
 
 ## Output
 
-Start the report with the principles and references actually checked:
+Start the report with its completion status, then the principles and references actually checked:
 
 ```text
+review_status: passed | needs_changes
 principles_checked:
 - <reference or principle from test-case-principles>
 - <reference or principle from test-case-principles>
 ```
+
+Use `needs_changes` while any blocking finding or actionable warning remains.
+Use `passed` only after the test-name question has been applied to every added
+or changed test and no actionable finding remains. During implementation,
+`needs_changes` returns the work for correction and another review; for
+review-only requests, report the findings without editing.
 
 Then report findings in this format. Use stable `finding_id` values such as `TDD-001`; in follow-up reviews, reuse the same ID for the same unresolved issue.
 
 ```text
 finding_id: TDD-001
 status: blocking | warning
+actionable: true | false
 principle: <principle from test-case-principles>
 file: <path>
 line: <line or best location>
