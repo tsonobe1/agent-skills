@@ -48,7 +48,7 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 - **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[tdd](./tdd/SKILL.md)** - テスト作成時に `test-case-principles` の core と、変更リスクに対応する reference だけを選んで適用します。
-- **[to-tickets](./to-tickets/SKILL.md)** - real issue tracker で ticket 作成後、必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では実行しません。
+- **[to-tickets](./to-tickets/SKILL.md)** - real issue tracker では必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では各 ticket path を依存順に1件ずつ `implement` へ渡し、`group-feature` は実行しません。
 
 ## Local Skills
 
