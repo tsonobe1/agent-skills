@@ -41,14 +41,15 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.2.3 を元に、次の5つにローカル変更があります。
+Matt Pocock の v1.2.3 を元に、次の6つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
 
 - **[ask-matt](./ask-matt/SKILL.md)** - main flow の `code-review` 案内を、ローカルの厳格な保守性 review に合わせています。
-- **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。
+- **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。local tracker ticket は着手時に `claimed`、検証と commit の成功後に `done` へ更新します。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[tdd](./tdd/SKILL.md)** - テスト作成時に `test-case-principles` の core と、変更リスクに対応する reference だけを選んで適用します。
-- **[to-tickets](./to-tickets/SKILL.md)** - real issue tracker では必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では各 ticket path を依存順に1件ずつ `implement` へ渡し、`group-feature` は実行しません。
+- **[to-tickets](./to-tickets/SKILL.md)** - real issue tracker では必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では各 ticket path を依存順に1件ずつ `implement` へ渡し、完了状態を永続化して、`group-feature` は実行しません。
+- **[setup-matt-pocock-skills](./setup-matt-pocock-skills/SKILL.md)** - local tracker の implementation ticket に `ready-for-agent` → `claimed` → `done` の状態遷移を定義します。
 
 ## Local Skills
 
