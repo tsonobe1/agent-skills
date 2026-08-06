@@ -104,4 +104,4 @@ The end-to-end behaviour this ticket makes work, from the user's perspective —
 
 In either form, avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
 
-If the user wants feature-level project management after the tickets are published, run `/group-feature` with the created ticket issue numbers. The feature parent should carry the `feature` label and a human verification checklist that covers the child tickets' acceptance criteria.
+If the user wants feature-level project management after publishing to a real issue tracker, run `/group-feature` with the created ticket issue numbers. The feature parent should carry the `feature` label and a human verification checklist that covers the child tickets' acceptance criteria. Skip `/group-feature` for local files because they have paths, not issue numbers.
