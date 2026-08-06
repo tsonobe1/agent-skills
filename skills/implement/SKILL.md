@@ -14,6 +14,6 @@ Once done, use /code-review to review the work.
 
 If tests were added, changed, or deleted, also run /tdd-review to check them against test-case-principles.
 
-Commit your work to the current branch.
+When the input is a local tracker ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, set its `Status:` to `claimed` before implementation. After the tests and reviews pass, set its `Status:` to `done`, then commit the implementation and the ticket's done transition together. If the commit fails, restore `Status: claimed` and report the failure. Do not mark a partial or failed implementation as done.
 
-When the input is a local tracker ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, set its `Status:` to `claimed` before implementation. After the tests and reviews pass and the implementation commit succeeds, set its `Status:` to `done` before returning. Do not mark a partial or failed implementation as done.
+For other inputs, commit your work to the current branch.
