@@ -73,7 +73,7 @@ Grok Build は Claude Code の skills も自動で読むようですが、この
 
 ```sh
 tmpdir=$(mktemp -d /tmp/mattpocock-skills.XXXXXX)
-git clone --depth 1 --branch v1.1.0 https://github.com/mattpocock/skills.git "$tmpdir"
+git clone --depth 1 --branch v1.2.3 https://github.com/mattpocock/skills.git "$tmpdir"
 ```
 
 そのあと、必要な skill を `skills/` にコピーまたは手作業でマージします。

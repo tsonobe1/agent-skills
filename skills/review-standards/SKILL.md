@@ -5,7 +5,7 @@ description: Use when reviewing code changes that should apply personal review s
 
 # Review Standards
 
-Apply these as personal standards during `code-review`, especially in the Standards axis.
+Apply these as personal standards during `code-review`.
 
 Repo-specific documented standards override style and design preferences in these rules. They do not override sensitive exposure, hidden failure, contract breakage, or incomplete changed behavior. Tool-enforced formatting or lint findings should be left to the tool unless the diff shows a design or correctness problem behind them.
 

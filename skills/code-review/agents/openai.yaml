@@ -1,0 +1,5 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Audit maintainability and structural simplicity"
+policy:
+  allow_implicit_invocation: false

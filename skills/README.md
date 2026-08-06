@@ -2,7 +2,7 @@
 
 Codex、Claude、Grok Build に同期する skills 一覧です。
 
-## Upstream: mattpocock/skills v1.1.0
+## Upstream: mattpocock/skills v1.2.3
 
 ### User-invoked
 
@@ -20,7 +20,8 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - **[grill-me](./grill-me/SKILL.md)** - codebase なしで計画を詰める grilling。
 - **[handoff](./handoff/SKILL.md)** - 会話を handoff document にまとめる。
 - **[teach](./teach/SKILL.md)** - 複数 session で概念を教える。
-- **[writing-great-skills](./writing-great-skills/SKILL.md)** - skill を書くための参照。
+- **[to-questionnaire](./to-questionnaire/SKILL.md)** - 判断に必要な回答を得るための questionnaire を作る。
+- **[wait-what](./wait-what/SKILL.md)** - 伝わらなかった説明を平易な言葉で言い直す。
 - **[code-review](./code-review/SKILL.md)** - 抽象化、巨大ファイル、spaghetti growth を厳しく検査する保守性 review。
 
 ### Model-invoked
@@ -35,12 +36,15 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - **[codebase-design](./codebase-design/SKILL.md)** - deep modules や seam の設計語彙。
 - **[resolving-merge-conflicts](./resolving-merge-conflicts/SKILL.md)** - merge / rebase conflict を解く。
 - **[grilling](./grilling/SKILL.md)** - reusable grilling loop。
+- **[wizard](./wizard/SKILL.md)** - 人間だけが実行できる手順を対話型 shell wizard にする。
+- **[writing-for-agents](./writing-for-agents/SKILL.md)** - skill や agent 向け文書を書くための参照。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.1.0 を元に、次の4つにローカル変更があります。
+Matt Pocock の v1.2.3 を元に、次の5つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
 
+- **[ask-matt](./ask-matt/SKILL.md)** - main flow の `code-review` 案内を、ローカルの厳格な保守性 review に合わせています。
 - **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[tdd](./tdd/SKILL.md)** - テスト作成時に `test-case-principles` の core と、変更リスクに対応する reference だけを選んで適用します。
