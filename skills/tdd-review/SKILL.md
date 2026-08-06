@@ -7,7 +7,7 @@ description: Use when implementation changes add, modify, or delete tests and th
 
 Use this after implementation when tests were added, changed, or deleted.
 
-This is a test-quality review, not a general code review. General code standards, architecture review, and spec conformance belong to `code-review`.
+This is a test-quality review, not a general code review. General code standards and architecture review belong to `code-review`; review spec conformance separately.
 
 ## Select Principles
 
