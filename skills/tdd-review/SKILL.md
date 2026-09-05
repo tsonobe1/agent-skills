@@ -7,7 +7,7 @@ description: Use when implementation changes add, modify, or delete tests and th
 
 Use this after implementation when tests were added, changed, or deleted.
 
-This is a test-quality review, not a general code review. General code standards and architecture review belong to `code-review`; review spec conformance separately.
+This is a test-quality review, not a general code review. Use `review-standards` for routine production-code review and `code-review` for an explicitly requested strict structural audit; review spec conformance separately.
 
 ## Select Principles
 
@@ -115,9 +115,11 @@ principles_checked:
 - <reference or principle from test-case-principles>
 ```
 
-Use `needs_changes` while any blocking finding or actionable warning remains.
-Use `passed` only after the test-name question has been applied to every added
-or changed test and no actionable finding remains. During implementation,
+Use `needs_changes` while a blocking finding remains.
+Use `passed` after the test-name question has been applied to every added
+or changed test and no blocking finding remains. Report warnings separately;
+warnings alone do not require another correction/review cycle. Escalate a warning
+only when evidence establishes a blocking risk in the changed contract. During implementation,
 `needs_changes` returns the work for correction and another review; for
 review-only requests, report the findings without editing.
 

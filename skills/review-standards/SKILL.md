@@ -1,11 +1,11 @@
 ---
 name: review-standards
-description: Use when reviewing code changes that should apply personal review standards beyond repo docs and the default Matt Pocock code-review smell baseline.
+description: Review changed code for correctness, contract integrity, failure handling, and maintainability using repository-specific standards. Use for routine implementation reviews.
 ---
 
 # Review Standards
 
-Apply these as personal standards during `code-review`.
+Use these standards for routine review of changed code, together with the repository review guide. An explicitly requested `code-review` structural audit may add its stricter bar; ordinary implementation does not implicitly request that audit.
 
 Repo-specific documented standards override style and design preferences in these rules. They do not override sensitive exposure, hidden failure, contract breakage, or incomplete changed behavior. Tool-enforced formatting or lint findings should be left to the tool unless the diff shows a design or correctness problem behind them.
 

@@ -52,7 +52,7 @@ The goal is not a clean repro but a **higher reproduction rate**. Loop the trigg
 
 ### When you genuinely cannot build a loop
 
-Stop and say so explicitly. List what you tried. Ask the user for: (a) access to whatever environment reproduces it, (b) a redacted captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or (c) permission to add temporary production instrumentation. Do **not** proceed to hypothesise without a loop.
+State the missing reproduction evidence and what you tried. Continue read-only code-path analysis and label conclusions as code facts or unverified hypotheses. Ask for the smallest missing environment or artifact only when it prevents the next dependent step. Use the repository's runtime or performance evidence policy before claiming a fix; an unavailable automated reproduction is not a reason to stop independent investigation.
 
 ### Completion criterion — a tight loop that goes red
 
@@ -63,7 +63,7 @@ Phase 1 is done when the loop is **tight** and **red-capable**: you can name **o
 - [ ] **Fast** — seconds, not minutes.
 - [ ] **Agent-runnable** — you can run it unattended; a human in the loop only via `scripts/hitl-loop.template.sh`.
 
-If you catch yourself reading code to build a theory before this command exists, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no Phase 2.
+This criterion establishes an automated feedback loop. When the environment cannot supply one, continue with the bounded investigation route above and report the reproduction gap. Code inspection may establish hypotheses before a reproducer exists; it does not establish runtime success.
 
 ## Phase 2 — Reproduce + minimise
 
@@ -83,7 +83,7 @@ Why bother: a minimal repro shrinks the hypothesis space in Phase 3 (fewer movin
 
 Done when **every remaining element is load-bearing** — removing any one of them makes the loop go green.
 
-Do not proceed until you have reproduced **and** minimised.
+For an available reproduction, minimise it before running fix experiments. For an unavailable runtime environment, use the investigation route above and keep reproduction explicitly pending.
 
 ## Phase 3 — Hypothesise
 
