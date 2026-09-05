@@ -52,34 +52,15 @@ When starting work, the user says:
 ## Guardrails
 
 - Do not batch multiple TODO cases in one cycle.
-- TODO must follow t-wada style, classical style TDD.
-    - Behavior-first.
-    - Outside-in thinking only when needed.
-    - Prefer state verification over interaction verification.
-    - No unnecessary mocking.
 - Each TODO must represent a single observable behavior.
-- Test the final result and externally observable behavior, not implementation details.
-- Test cases must be written structurally.
-- Classify test cases by normal flow (`正常系`), delegation flow (`移譲系`), and the relevant preconditions for the behavior under test.
-- Apply design by contract in the tests and review discussion.
-    - Make preconditions explicit.
-    - Verify postconditions through observable outcomes.
-    - Preserve invariants across the change.
-
-  Use the following structure:
+- When designing or reviewing tests, use [test-case-principles](../test-case-principles/SKILL.md) for classical TDD, behavior, naming, test structure, collaborators, and contract assertions. Read its core principles and only the additional references relevant to the changed behavior.
+- For this interactive workflow, group cases by normal flow (`正常系`), delegation flow (`移譲系`), and relevant preconditions. Write Japanese case names in this form, retaining English identifiers only for domain terminology:
     - XXをするYY
         - XX のとき YY となる
-
-- Test case names must be written in Japanese.
-- Test names must describe behavior (condition + result), not method names.
-- One test = one behavior.
-- Do not test multiple branches in a single test.
-- Avoid implementation detail assertions unless they are required to verify a contract-level invariant.
 - Keep each step observable and explain why the change is needed.
 - Prefer minimal deterministic diffs.
 - Pause coding and return to discussion if disagreement appears.
 - If scope changes, stop and re-align TODO/acceptance before continuing.
-- Do not use English identifiers in test names unless domain terminology requires it.
 
 - The plan must be updated before every commit.
 - Implementation and plan must remain consistent.
