@@ -1,6 +1,6 @@
 ---
 name: workflow
-description: Shared collaboration workflow for implementing one TODO case at a time (t-wada style classical TDD). Assumes plan and TODO list are already agreed. Includes explicit review gates and pre-commit quality checks (lint/format/knip).
+description: Shared collaboration workflow for implementing one TODO case at a time (t-wada style classical TDD). Assumes plan and TODO list are already agreed. Includes explicit review gates and repository-specific pre-commit checks.
 ---
 
 # Workflow
@@ -44,10 +44,8 @@ When starting work, the user says:
     - Adjust acceptance criteria if clarified during implementation.
     - Record any design decision discovered during the case.
 9. **Quality Gate (before commit)**:
-    - run `lint`
-    - run `format`
-    - run `knip`
-    - if any fail: fix minimally, keep scope constrained to the same TODO case.
+    - Run the checks required by the repository guide for the changed platform and scope.
+    - If a required check fails, fix within the approved scope or report the blocker.
 10. **Commit the case**.
 11. Move to the next TODO case.
 
@@ -87,23 +85,9 @@ When starting work, the user says:
 - Implementation and plan must remain consistent.
 - No commit without plan alignment.
 
----
-- Fallbacks must be introduced only when truly necessary.
-Habitual or precautionary fallbacks are strictly prohibited.
-Do not introduce fallbacks that make system behavior ambiguous.
-- Unnecessary fallbacks must never be added.
-They are allowed only when explicitly required by the specification.
-- Backward compatibility must not be considered.
-The system is still in development and has not been released; therefore, impact on existing users is not a concern.
-- Avoid defensive implementations created solely to preserve compatibility.
-Even if a breaking change is required, it is acceptable if it results in a cleaner and more correct design.
-- Prioritize structural integrity over compromise.
-Do not distort the design to accommodate temporary or speculative concerns.
+## Compatibility and fallbacks
 
-Intent:
-- Do not accumulate defensive code merely to avoid breaking things.
-- Do not introduce conditional branches based on vague “we might need this later” reasoning.
-- During the pre-release phase, maximize design purity and structural clarity.
+Follow the repository's compatibility and data-preservation policy. Add fallbacks only for specified failure behavior; request clarification when that behavior is unresolved and consequential. Keep speculative compatibility work outside the change's scope.
 
 ## Review Mindset
 
