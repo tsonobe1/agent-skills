@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow"
+  short_description: "Plan first, then one-case classical TDD with behavior-first tests and skeptical reviews"
+  default_prompt: "Use $workflow to align on plan discussion, agree TDD TODOs, and execute one test case at a time with review gates, behavior-focused tests, and contract-aware reviews."
