@@ -1,54 +1,30 @@
 # Agent Skills
 
-Codex、Claude、Grok Build で共通利用する個人用 skills の管理リポジトリです。
-
-## 責務と chezmoi との分担
-
-このリポジトリは、スキルの本文・参考資料・補助スクリプトと、その変更履歴を管理します。
-PC の設定ファイルは [chezmoi-dotfiles](https://github.com/tsonobe1/chezmoi-dotfiles) が管理します。
-
-| やりたいこと | 編集先・使うもの |
-| --- | --- |
-| スキルの内容を変える | このリポジトリの `skills/` |
-| スキルを追加・削除・改名する | `skills/` を変更し、`./scripts/sync-live.sh` でリンクを整える |
-| スキルの変更を GitHub に保存する | このリポジトリで commit / push |
-| シェル・Git・Codex 共通指示などを変える | `chezmoi-dotfiles` を編集し、`chezmoi diff` → `chezmoi apply` |
-| 新しい PC に環境を用意する | `chezmoi-dotfiles` のセットアップ後、このリポジトリの hook を設定する |
-
-日常のスキル編集は、このリポジトリから各ツールへのリンクでつながっています。
-chezmoi は初回などの環境準備で、このリポジトリを取得して同期スクリプトを呼びます。
-スキル本体の編集・更新は、このリポジトリ側で行います。
-
-## 何を管理しているか
-
-このリポジトリの `skills/` が source of truth です。
-
-実際に Codex / Claude / Grok Build が読む場所には、原則として `skills/` への symlink を置きます。
+**スキルを `skills/` で一元管理し、Codex・Claude・Grok Build のスキル置き場に
+シンボリックリンクを作成するリポジトリです。** 各ツールはリンク経由で同じ本体を読みます。
 
 ```text
-~/.codex/skills/<skill-name>  ->  ./skills/<skill-name>
-~/.claude/skills/<skill-name> ->  ./skills/<skill-name>
-~/.grok/skills/<skill-name>   ->  ./skills/<skill-name>
+Codex: ~/.codex/skills/<name>   -> このリポジトリの skills/<name>
+Claude: ~/.claude/skills/<name> -> このリポジトリの skills/<name>
+Grok: ~/.grok/skills/<name>     -> このリポジトリの skills/<name>
 ```
-
-つまり、skill を追加・編集・削除するときは、基本的にこのリポジトリの
-`skills/` を変更します。
-
-各ツール側に置くのはコピーではなく、本体へのリンク（ショートカット）です。
-リンク済みのスキルは、本体を編集すると次にファイルを読み込んだときに編集後の内容が読まれます。
-編集のたびに同期スクリプトを実行する必要はありません。
-すでに会話内に読み込まれた内容の更新や、新しいスキルの検出は、各ツールの読み込み動作に従います。
 
 ## 普段の使い方
 
-`skills/` を編集し、差分を確認してから対象ファイルを commit / push します。
+### 既存のスキルを編集する
+
+`skills/<name>/SKILL.md` や、そのスキルの参考資料・補助スクリプトを編集します。
+リンク済みなら、各ツールが次にファイルを読んだときに変更後の内容が読まれます。
+編集のたびに同期スクリプトを実行する必要はありません。
+
+変更を GitHub に保存するときは、差分を確認して commit / push します。
 
 ```sh
 git status --short
 git diff
 git add -- skills
 git diff --cached
-git commit -m "Update skills"
+git commit -m "Keep shared guidance consistent across agents"
 git push
 ```
 
@@ -58,13 +34,18 @@ git push
 `git merge` と、merge を伴う `git pull` の後にも同期されます。
 rebase ではこの hook は動かないため、追加・削除を取り込んだ場合は手動で同期します。
 
-## 手動でリンクを整える
+### スキルを追加・削除・改名する
 
-新しいスキルを commit 前に使いたい場合や、追加・削除・改名後にリンクを整えたい場合に実行します。
+`skills/` の追加・削除・改名後、次を実行して各ツール側のリンクを整えます。
+新しいスキルを commit 前に使いたいときも、この操作です。
 
 ```sh
 ./scripts/sync-live.sh
 ```
+
+すでに会話内に読み込まれた内容の更新や、新しいスキルの検出は、各ツールの読み込み動作に従います。
+
+## 同期スクリプトが扱う範囲
 
 この script は以下を行います。
 
@@ -75,16 +56,16 @@ rebase ではこの hook は動かないため、追加・削除を取り込ん�
 
 配置先に同名のファイルやフォルダがある場合はリンクに置き換えるため、同期前に内容を確認します。
 
-## hook を設定する
+## 初期設定
 
-別マシンや新しい clone では、一度だけ hook を設定します。
+別マシンや新しい clone では、一度だけ hook を設定し、最初のリンクを作成します。
 
 ```sh
 ./scripts/install-hooks.sh
+./scripts/sync-live.sh
 ```
 
 これで `post-commit` / `post-merge` hook が有効になります。
-chezmoi 側の準備処理は、この hook 設定までは行いません。
 
 hook が行うのはリンクの整備です。既存リンク先の編集内容は、commit 前から読み取り可能です。
 
@@ -117,3 +98,10 @@ git add -- skills
 git commit -m "Update upstream skills"
 git push
 ```
+
+## chezmoi との関係
+
+シェル・Git などの PC 設定は [chezmoi-dotfiles](https://github.com/tsonobe1/chezmoi-dotfiles) が管理します。
+chezmoi は初回などの環境準備で、このリポジトリを取得して同期スクリプトを呼びます。
+Git hook の有効化は、上記の「初期設定」で別途行います。
+普段のスキル編集・同期・commit / push は、このリポジトリで行います。
