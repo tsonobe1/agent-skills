@@ -5,3 +5,5 @@ disable-model-invocation: true
 ---
 
 Run a `/grilling` session, using the `/domain-modeling` skill.
+
+For UI work, first follow [UI specification](../ui-specification/SKILL.md), and carry the agreed design into the resulting docs.

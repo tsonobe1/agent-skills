@@ -41,14 +41,16 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.2.3 を元に、次の6つにローカル変更があります。
+Matt Pocock の v1.2.3 を元に、次の8つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
 
 - **[ask-matt](./ask-matt/SKILL.md)** - main flow の `code-review` 案内を、ローカルの厳格な保守性 review に合わせています。
-- **[implement](./implement/SKILL.md)** - テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。local tracker ticket は着手時に `claimed`、検証後に `done` へ更新し、implementation と同じ commit に含めます。実装中の受け入れ条件の差分を current scope / follow-up に分類し、短い返答からcommit、PR操作、scope拡張、worktree cleanupまで推測しません。
+- **[grill-with-docs](./grill-with-docs/SKILL.md)** - UI仕様の共通ルールを適用し、合意したデザインを文書へ引き継ぎます。
+- **[implement](./implement/SKILL.md)** - 実装前にUI仕様の共通ルールを適用します。テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。local tracker ticket は着手時に `claimed`、検証後に `done` へ更新し、implementation と同じ commit に含めます。実装中の受け入れ条件の差分を current scope / follow-up に分類し、短い返答からcommit、PR操作、scope拡張、worktree cleanupまで推測しません。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[tdd](./tdd/SKILL.md)** - テスト作成時に `test-case-principles` の core と、変更リスクに対応する reference だけを選んで適用します。
-- **[to-tickets](./to-tickets/SKILL.md)** - real issue tracker では必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では各 ticket path を依存順に1件ずつ `implement` へ渡し、完了状態を永続化して、`group-feature` は実行しません。
+- **[to-tickets](./to-tickets/SKILL.md)** - UI仕様の共通ルールを満たしてから実装ticketsを公開します。real issue tracker では必要に応じて `group-feature` で親 feature Issue と human verification checklist を作ります。local files では各 ticket path を依存順に1件ずつ `implement` へ渡し、完了状態を永続化して、`group-feature` は実行しません。
+- **[to-spec](./to-spec/SKILL.md)** - 未確定のUI仕様は公開前に合意し、Issueへ記録します。`to-tickets`と`implement`も同じUI仕様ルールを参照します。
 - **[setup-matt-pocock-skills](./setup-matt-pocock-skills/SKILL.md)** - local tracker の implementation ticket に `ready-for-agent` → `claimed` → `done` の状態遷移を定義します。
 
 ## Local Skills
@@ -72,3 +74,4 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 - **[session-resume-check](./session-resume-check/SKILL.md)** - 再接続後に作業状況と次の安全な手順を復元する。
 - **[tdd-review](./tdd-review/SKILL.md)** - 追加・変更・削除された tests の品質をレビューする。
 - **[test-case-principles](./test-case-principles/SKILL.md)** - 振る舞いに焦点を当てた test case 設計原則を提供する。
+- **[ui-specification](./ui-specification/SKILL.md)** - UI仕様をIssue化・実装前に合意し、対象画面ごとの表示・操作と合意記録を引き継ぐ。

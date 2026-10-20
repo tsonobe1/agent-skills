@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Implement the work described by the user in the spec or tickets.
 
+Before implementing UI changes, follow [UI specification](../ui-specification/SKILL.md); resolve and record missing UI decisions before production changes.
+
 If acceptance criteria change during implementation, state the before/after behavior and classify the delta as current scope or follow-up before editing. Do not fold an independently useful follow-up into the current change without explicit approval.
 
 A brief acknowledgement such as `y` authorizes only the immediately named gate. Do not infer permission to commit, push, open, ready, or merge a pull request, expand scope, or clean up worktrees.
