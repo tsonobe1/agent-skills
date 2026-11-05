@@ -45,6 +45,22 @@ rebase ではこの hook は動かないため、追加・削除を取り込ん�
 
 すでに会話内に読み込まれた内容の更新や、新しいスキルの検出は、各ツールの読み込み動作に従います。
 
+## セキュリティ監査
+
+[Cloudflare の security-audit](./skills/security-audit/SKILL.md) を利用できます。
+上記の同期後は Codex・Claude・Grok Build から同じスキルを読みます。
+監査対象のリポジトリで、例えば次のように依頼します。
+
+```text
+security-audit を使って、このコードベースをセキュリティ監査してください。
+```
+
+個別のセキュリティ相談にも使えます。完全な監査は明示的に依頼したときに実行し、
+既定の出力先は対象リポジトリ外の `~/security-audit-skill/<repo-name>/run-<N>` です。
+完全な監査には並列サブエージェント機能と Node.js、対象コードの実行検証には
+スキルが定める OS sandbox が必要です。実行条件を満たせない検証は未確認として残します。
+取得元のコミットとライセンスは [スキル一覧](./skills/README.md#upstream-cloudflaresecurity-audit-skill) に記録しています。
+
 ## 同期スクリプトが扱う範囲
 
 この script は以下を行います。

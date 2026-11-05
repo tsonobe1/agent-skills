@@ -39,6 +39,13 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - **[wizard](./wizard/SKILL.md)** - 人間だけが実行できる手順を対話型 shell wizard にする。
 - **[writing-for-agents](./writing-for-agents/SKILL.md)** - skill や agent 向け文書を書くための参照。
 
+## Upstream: cloudflare/security-audit-skill
+
+- **[security-audit](./security-audit/SKILL.md)** - セキュリティに関する相談・個別レビューと、独立した検証を伴うコードベース監査。モデルから自動で利用でき、明示的にも呼び出せます。
+- 取得元: [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill/tree/c1c8a8c1471069fb0e188eeaff69b8e8db6564a8/skills/security-audit)（commit `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8`）。
+- `skills/security-audit/` の全ファイルを変更せず取り込み、リポジトリ直下の [MIT License](./security-audit/LICENSE) を同梱しています。
+- 完全な監査には並列サブエージェント機能と Node.js が必要です。対象コードの実行検証には、スキルが定める OS sandbox が必要です。
+
 ## Upstream Skills のローカル変更
 
 Matt Pocock の v1.2.3 を元に、次の8つにローカル変更があります。
