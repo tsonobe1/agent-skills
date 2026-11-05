@@ -48,11 +48,14 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 
 ## Upstream Skills のローカル変更
 
-Matt Pocock の v1.2.3 を元に、次の8つにローカル変更があります。
+Matt Pocock の v1.2.3 を元に、次の9つにローカル変更があります。
 upstream を更新するときは、これらを上書きせず差分マージします。
+
+`grilling`・`implement`・`to-spec`・`to-tickets`には、共通手順 `hypothesis-and-evidence` の参照と、担当段階で仮説・事前の検証条件・証拠を引き継ぐ指示も追加しています。
 
 - **[ask-matt](./ask-matt/SKILL.md)** - main flow の `code-review` 案内を、ローカルの厳格な保守性 review に合わせています。
 - **[grill-with-docs](./grill-with-docs/SKILL.md)** - UI仕様の共通ルールを適用し、合意したデザインを文書へ引き継ぎます。
+- **[grilling](./grilling/SKILL.md)** - 既存の質問・分岐を維持し、`hypothesis-and-evidence` の仮説・反論・盲点・プレモーテムの観点を追加します。
 - **[implement](./implement/SKILL.md)** - 実装前にUI仕様の共通ルールを適用します。テストを追加・変更・削除した場合、`tdd-review` を実行して `test-case-principles` に照らします。local tracker ticket は着手時に `claimed`、検証後に `done` へ更新し、implementation と同じ commit に含めます。実装中の受け入れ条件の差分を current scope / follow-up に分類し、短い返答からcommit、PR操作、scope拡張、worktree cleanupまで推測しません。
 - **[code-review](./code-review/SKILL.md)** - Standards / Spec の二軸 review を、保守性と構造的単純化に集中する user-invoked review へ置き換えています。
 - **[tdd](./tdd/SKILL.md)** - テスト作成時に `test-case-principles` の core と、変更リスクに対応する reference だけを選んで適用します。
@@ -76,6 +79,7 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 モデルが状況に応じて自動で使える skills です。ユーザーが明示的に呼んでも構いません。
 
 - **[conversation-to-readable-html](./conversation-to-readable-html/SKILL.md)** - 会話や調査結果を読みやすい単一 HTML にまとめる。
+- **[hypothesis-and-evidence](./hypothesis-and-evidence/SKILL.md)** - ユーザーの仮説、反論・盲点・プレモーテム、事前の検証条件、証拠と未確認事項、見落としの再点検、AIが決めたことを各段階へ引き継ぐ。
 - **[playwright](./playwright/SKILL.md)** - 実ブラウザを操作して画面確認やデータ取得を行う。
 - **[review-standards](./review-standards/SKILL.md)** - repo の規約を補う個人用 code review 基準を適用する。
 - **[session-resume-check](./session-resume-check/SKILL.md)** - 再接続後に作業状況と次の安全な手順を復元する。

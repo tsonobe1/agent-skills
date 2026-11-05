@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Implement the work described by the user in the spec or tickets.
 
+At Issue start, use [Hypothesis and Evidence](../hypothesis-and-evidence/SKILL.md) to confirm the existing hypothesis, assumptions, challenge findings, and verification conditions before implementation. Reuse settled decisions and record any changes and their reasons under the existing scope rules.
+
 Before implementing UI changes, follow [UI specification](../ui-specification/SKILL.md); resolve and record missing UI decisions before production changes.
 
 If acceptance criteria change during implementation, state the before/after behavior and classify the delta as current scope or follow-up before editing. Do not fold an independently useful follow-up into the current change without explicit approval.
@@ -15,6 +17,8 @@ A brief acknowledgement such as `y` authorizes only the immediately named gate. 
 Use /tdd for testable behavior, reusing approved contracts and existing public boundaries.
 
 Choose verification from the repository guide for the changed surface. Reuse successful evidence while the tested content and environment remain applicable. Broaden or repeat checks only for new changes, failures, or unresolved risks; run a full suite when those risks or the repository require it. Documentation-only work normally needs diff and reference checks, not product tests.
+
+Follow Hypothesis and Evidence's verification and closeout sections before claiming completion: show actual results and supporting evidence, state what was not performed or observed, answer 「何か見落としていない？」 against the original intent and evidence, and disclose what the AI decided on the user's behalf and why.
 
 Review the changed behavior and contracts using the repository review guide and `review-standards`. Use `code-review` only for an explicitly requested strict structural audit.
 

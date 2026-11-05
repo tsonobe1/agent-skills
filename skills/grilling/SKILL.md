@@ -3,6 +3,8 @@ name: grilling
 description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
 
+For feature or design discussions, also use [Hypothesis and Evidence](../hypothesis-and-evidence/SKILL.md) to distinguish the user's hypothesis from facts and AI assumptions, and add counterarguments, blind spots, and a premortem to the interview below. Carry the findings forward without replacing this skill's existing questions, branches, or completion rules.
+
 Interview the user relentlessly until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it.
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled — the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.

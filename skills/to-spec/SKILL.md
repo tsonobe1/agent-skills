@@ -8,6 +8,8 @@ This skill takes the current conversation context and codebase understanding and
 
 The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
 
+Use [Hypothesis and Evidence](../hypothesis-and-evidence/SKILL.md) to carry forward the user's hypothesis, AI assumptions, counterarguments, blind spots, premortem findings, and the verification plan. Reuse decisions already settled in the conversation.
+
 ## Process
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
@@ -27,6 +29,10 @@ The problem that the user is facing, from the user's perspective.
 ## Solution
 
 The solution to the problem, from the user's perspective.
+
+## Hypothesis and assumptions
+
+The user's observations and hypothesis, why the proposed change should help, AI assumptions, the counterargument, blind spots, premortem findings, and remaining questions. Include hypothesis revisions and their reasons, or refer to the existing record.
 
 ## UI specification (when applicable)
 
@@ -56,11 +62,15 @@ A list of implementation decisions that were made. This can include:
 - API contracts
 - Specific interactions
 
+Attribute decisions to user agreement or AI selection and record their reasons. Keep unresolved assumptions distinct from agreed behavior.
+
 Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
 
 ## Testing Decisions
+
+Define the initial verification plan before implementation: starting conditions, action or measurement, observable expected result, pass/fail condition, evidence to retain, and conclusions the check cannot establish. Follow the repository's verification rules.
 
 A list of testing decisions that were made. Include:
 

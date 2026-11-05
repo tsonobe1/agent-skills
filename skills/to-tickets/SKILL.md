@@ -18,6 +18,8 @@ Work from whatever is already in the conversation context. If the user passes a 
 
 For UI work, follow [UI specification](../ui-specification/SKILL.md) before publishing implementation tickets.
 
+Use [Hypothesis and Evidence](../hypothesis-and-evidence/SKILL.md) to carry the agreed hypothesis and challenge findings into each ticket and define verification before implementation. Reference the parent record where applicable, with the acceptance criteria and verification conditions relevant to the ticket.
+
 ### 2. Explore the codebase (optional)
 
 If you have not already explored the codebase, do so to understand the current state of the code. Ticket titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
@@ -78,6 +80,10 @@ Do NOT close or modify any parent issue.
 
 **Status:** ready-for-agent
 
+**Hypothesis and assumptions:** the relevant hypothesis, AI assumptions, challenge findings, revisions, and unresolved questions, or a reference to their existing record.
+
+**Verification plan:** starting conditions, action or measurement, observable expected result, pass/fail condition, evidence to retain, and conclusions the check cannot establish.
+
 **UI specification (when applicable):** agreed design summary, design reference, and approval reference.
 
 - [ ] Acceptance criterion 1
@@ -94,6 +100,14 @@ A reference to the parent issue on the tracker (if the source was an existing is
 ## What to build
 
 The end-to-end behaviour this ticket makes work, from the user's perspective — not layer-by-layer implementation.
+
+## Hypothesis and assumptions
+
+The relevant hypothesis, AI assumptions, challenge findings, revisions, and unresolved questions, or a reference to their existing record.
+
+## Verification plan
+
+Starting conditions, action or measurement, observable expected result, pass/fail condition, evidence to retain, and conclusions the check cannot establish.
 
 ## UI specification (when applicable)
 

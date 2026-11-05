@@ -45,6 +45,12 @@ rebase ではこの hook は動かないため、追加・削除を取り込ん�
 
 すでに会話内に読み込まれた内容の更新や、新しいスキルの検出は、各ツールの読み込み動作に従います。
 
+## 仮説と証拠を引き継ぐ
+
+[hypothesis-and-evidence](./skills/hypothesis-and-evidence/SKILL.md) は、作るものの相談からIssue化・実装・検証までの共通手順です。
+ユーザーの仮説とAIの仮定を区別し、反論・盲点・プレモーテム、事前の検証条件、実際の証拠・未確認事項、見落としの再点検、AIが決めたことを引き継ぎます。
+合意した配置と役割は [設計文書](./docs/design/2026-11-05-hypothesis-and-evidence.md) に記録しています。
+
 ## セキュリティ監査
 
 [Cloudflare の security-audit](./skills/security-audit/SKILL.md) を利用できます。

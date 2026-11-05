@@ -48,6 +48,8 @@ Use the deletion test for abstractions: if deleting the abstraction would make t
 
 Base findings on verified changed code, not memory, prior reviews, or speculation. Read the relevant file and line before raising a finding. If the evidence is missing, report the uncertainty instead of guessing.
 
+For implementation closeout, also follow [Hypothesis and Evidence](../hypothesis-and-evidence/SKILL.md): compare the original intent and predeclared criteria with the actual evidence, identify unchecked conclusions, answer the omissions check, and examine decisions made by the AI. Use source artifacts rather than relying only on the implementer's summary; distinguish self-review from independent review actually performed.
+
 ## Finding Shape
 
 Every finding should include:
