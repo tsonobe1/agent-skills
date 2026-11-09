@@ -1,0 +1,3 @@
+interface:
+  display_name: "Structured Writing"
+  short_description: "Structure PRs, Issues, and user-facing reports"
