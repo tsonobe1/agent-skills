@@ -83,6 +83,7 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 - **[playwright](./playwright/SKILL.md)** - 実ブラウザを操作して画面確認やデータ取得を行う。
 - **[review-standards](./review-standards/SKILL.md)** - repo の規約を補う個人用 code review 基準を適用する。
 - **[session-resume-check](./session-resume-check/SKILL.md)** - 再接続後に作業状況と次の安全な手順を復元する。
+- **[structured-writing](./structured-writing/SKILL.md)** - PR・Issue・ユーザーへの説明や報告で、情報の役割を分け、構造・形式・粒度をそろえて読みやすくする。
 - **[tdd-review](./tdd-review/SKILL.md)** - 追加・変更・削除された tests の品質をレビューする。
 - **[test-case-principles](./test-case-principles/SKILL.md)** - 振る舞いに焦点を当てた test case 設計原則を提供する。
 - **[ui-specification](./ui-specification/SKILL.md)** - UI仕様をIssue化・実装前に合意し、対象画面ごとの表示・操作と合意記録を引き継ぐ。
