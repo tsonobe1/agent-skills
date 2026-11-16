@@ -46,6 +46,12 @@ Codex、Claude、Grok Build に同期する skills 一覧です。
 - `skills/security-audit/` の全ファイルを変更せず取り込み、リポジトリ直下の [MIT License](./security-audit/LICENSE) を同梱しています。
 - 完全な監査には並列サブエージェント機能と Node.js が必要です。対象コードの実行検証には、スキルが定める OS sandbox が必要です。
 
+## Upstream: nanaism/yomiyasu v3.1.0
+
+- **[yomiyasu](./yomiyasu/SKILL.md)** - AI生成の日本語を、意味を保ちながら推敲します。スキル名を明示して頼まれたときに使います。
+- 取得元: [nanaism/yomiyasu](https://github.com/nanaism/yomiyasu/tree/db78b9bc5e868549b517a037df7a4d1c93edac23/skills/yomiyasu)（commit `db78b9bc5e868549b517a037df7a4d1c93edac23`）。
+- `skills/yomiyasu/` を変更せず取り込み、MIT License と Unicode data license を同梱しています。
+
 ## Upstream Skills のローカル変更
 
 Matt Pocock の v1.2.3 を元に、次の9つにローカル変更があります。
