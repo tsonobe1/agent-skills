@@ -87,6 +87,7 @@ upstream を更新するときは、これらを上書きせず差分マージ�
 - [conversation-to-readable-html](./conversation-to-readable-html/SKILL.md) - 会話や調査結果を読みやすい単一 HTML にまとめる。
 - [hypothesis-and-evidence](./hypothesis-and-evidence/SKILL.md) - ユーザーの仮説、反論・盲点・プレモーテム、事前の検証条件、証拠と未確認事項、見落としの再点検、AIが決めたことを各段階へ引き継ぐ。
 - [issue-writing](./issue-writing/SKILL.md) - Issueの必要性・完了条件・検証計画を、リポジトリのテンプレートに沿って記述する。
+- [personal-work-report](./personal-work-report/SKILL.md) - 本人への進捗・完了報告や採用相談を、普段の用語と確認済みの事実で伝える。
 - [playwright](./playwright/SKILL.md) - 実ブラウザを操作して画面確認やデータ取得を行う。
 - [pr-writing](./pr-writing/SKILL.md) - PRの課題・変更・検証結果を、実際の差分と証拠に基づいて記述する。
 - [review-standards](./review-standards/SKILL.md) - repo の規約を補う個人用 code review 基準を適用する。
